@@ -1,67 +1,69 @@
-# 🎓 Master's Schedule - ZCANIC PRO
+# 🎓 研究生课表助手 | Master's Schedule - ZCANIC PRO
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg) ![React](https://img.shields.io/badge/react-18.x-61dafb.svg) ![Vite](https://img.shields.io/badge/vite-6.x-646cff.svg) ![Tailwind](https://img.shields.io/badge/tailwind-3.4-38bdf8.svg)
 
-**Master's Schedule - ZCANIC PRO** is a next-generation, high-performance academic planner designed to help students visualize, manage, and optimize their complex course schedules. 
+**Master's Schedule (ZCANIC PRO)** 是一款次世代的高性能学术规划工具，专为研究生复杂的选课与日程管理场景打造。它将枯燥的排课任务转化为一场交互式、数据驱动的视觉盛宴。
 
-Built with a focus on aesthetics ("Glassmorphism") and usability, it transforms the mundane task of course selection into an interactive, data-driven experience.
+> 核心理念：**美学驱动效率**。我们拒绝丑陋的表格，用莫兰迪色系与现代交互设计重新定义课表。
 
-## ✨ Key Features
+## ✨ 核心特性
 
-### 📅 Smart Schedule Grid
-- **Dynamic Week Slider**: Drag to instantly travel through your semester (Weeks 1-16).
-- **Intelligent Layout**: Automatically handles multiple courses in the same slot using density-aware sizing (perfect split for conflicts).
-- **Mobile First**: Optimized layout for both desktop monitors and narrow mobile screens.
+### 📅 智能课表系统
+- **动态周次滑块**：拖动滑块即可在 1-16 周之间瞬时穿梭，查看任意一周的具体安排。
+- **智能布局算法**：自动处理同一时间槽内的多门课程冲突，自适应分割显示区域，告别叠字遮挡。
+- **无网格极简设计**：摒弃传统边框束缚，利用空白与色彩构建清晰的视觉层级。
 
-### 🛠 Powerful Data Editor ("God View")
-- **Unified 16-Week Grid**: A revolutionary "Pixel Grid" editor where every time slot is subdivided into 16 weeks. 
-- **Interactive Input**: Double-click any "pixel" (week) to instantly add a course to that specific slot.
-- **Visual Feedback**: Instantly see which weeks are busy (colored blocks) and which are free (gray).
-- **CSV Import/Export**: Backup your schedule or migrate data easily.
+### 🛠 强大的数据与解析能力
+- **上帝视角编辑器 (Unified Grid)**：革命性的“像素风格”编辑器，支持对 16 周的每一个时间片进行微操。
+- **智能 Excel/CSV 导入**：
+    - **自动去噪**：智能识别并简化冗长的地点字符串（如将 `【校本部】逸夫楼302(T)` 自动清洗为 `逸302`）。
+    - **特殊课程识别**：自动识别并标记 SSR（选修/特殊）课程，赋予独特的视觉样式。
+    - **鲁棒性解析**：完美处理非标准 Excel 布局（如跨行单元格、非排课时间行）。
+- **Mock 数据生成**：内置脚本支持将 Excel 数据快速转换为 TypeScript Mock 数据。
 
-### 📊 Review & Visualization
-- **Load Analysis**: Real-time bar charts showing weekly intensity (Course Load vs. Week).
-- **3D Visualization**: An immersive 3D view of your schedule using `Three.js` (because why not?).
-- **Global Heatmap**: A compact 16-week overview of your entire semester's density.
+### 📊 多维可视化视图
+- **🚇 地铁线路图模式 (Metro Map)**：用地铁线路的概念展示课程间的关联与时间流向，支持折叠图例与超大范围缩放 (0.1x - 4x)。
+- **🧊 3D 沉浸视图**：基于 `Three.js` 构建的课程立方体视图，从空间维度审视你的学期压力。
+- **📈 负载分析**：实时图表分析每周的课业强度，助你科学规划学期节奏。
 
-### 🎨 Modern UI/UX
-- **Glassmorphism Design**: Sleek, translucent panels with blurred backgrounds.
-- **Smooth Transitions**: No more jarring page loads; optimized React transitions for a native app feel.
-- **Adaptive Typography**: Font sizes automatically scale based on content density.
+### 🎨 极致 UI/UX 设计
+- **莫兰迪配色 (Morandi Palette)**：全线采用低饱和度的高级灰色调（雾霾蓝、脏粉、鼠尾草绿），久看既不刺眼又富有质感。
+- **毛玻璃特效 (Glassmorphism)**：大量运用背景模糊与半透明材质，营造现代 OS 般的原生体验。
+- **移动端优先**：针对 iOS Safari 做了深度适配，解决字体缩放与布局错位问题，支持触摸手势。
 
-## 🚀 Tech Stack
+## 🚀 技术栈
 
-- **Core**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS (w/ PostCSS)
-- **Visualization**: Recharts (Data), React Three Fiber (3D)
-- **State Management**: React Hooks + LocalStorage Persistence
+- **核心框架**: React 18 + TypeScript + Vite
+- **样式引擎**: Tailwind CSS (w/ PostCSS)
+- **可视化**: React Flow (地铁图), React Three Fiber (3D), Recharts (统计)
+- **数据处理**: XLSX (Excel 解析)
 
-## 📦 Getting Started
+## 📦 快速开始
 
-1. **Clone the repository**
+1. **克隆仓库**
    ```bash
    git clone https://github.com/zcanic/master-s-schedule-.git
    cd master-s-schedule-
    ```
 
-2. **Install dependencies**
+2. **安装依赖**
    ```bash
    npm install
    ```
 
-3. **Run development server**
+3. **启动开发服务器**
    ```bash
    npm run dev
    ```
 
-4. **Build for production**
+4. **构建生产版本**
    ```bash
    npm run build
    ```
 
-## 📄 License
+## 📄 开源协议
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+本项目基于 MIT 协议开源 - 详见 [LICENSE](LICENSE) 文件。
 
 ---
 
