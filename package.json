@@ -11,12 +11,16 @@
   "dependencies": {
     "@react-three/drei": "9.117.3",
     "@react-three/fiber": "8.17.10",
+    "dagre": "^0.8.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "reactflow": "^11.11.4",
     "recharts": "2.13.3",
-    "three": "0.169.0"
+    "three": "0.169.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@types/dagre": "^0.7.53",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.23",

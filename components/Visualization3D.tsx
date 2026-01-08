@@ -25,21 +25,31 @@ const Voxel: React.FC<VoxelProps> = ({ position, color, isSSR, opacity, explosio
     position[2] * explosion,
   ];
 
-  const colorMap: Record<string, string> = {
-    'bg-blue-100': '#60a5fa',
-    'bg-indigo-100': '#818cf8',
-    'bg-purple-100': '#a78bfa',
-    'bg-emerald-100': '#34d399',
-    'bg-orange-100': '#fb923c',
-    'bg-rose-100': '#fb7185',
-    'bg-cyan-100': '#22d3ee',
-    'bg-yellow-100': '#facc15',
-    'bg-teal-100': '#2dd4bf',
-    'bg-lime-100': '#a3e635',
-    'bg-fuchsia-100': '#e879f9',
-  };
+  const baseColor = useMemo(() => {
+    if (color?.startsWith('#')) return color;
 
-  const baseColor = isSSR ? '#f43f5e' : (colorMap[color.split(' ')[0]] || '#94a3b8');
+    const colorMap: Record<string, string> = {
+      'bg-blue-100': '#60a5fa',
+      'bg-indigo-100': '#818cf8',
+      'bg-purple-100': '#a78bfa',
+      'bg-emerald-100': '#34d399',
+      'bg-orange-100': '#fb923c',
+      'bg-rose-100': '#fb7185',
+      'bg-cyan-100': '#22d3ee',
+      'bg-yellow-100': '#facc15',
+      'bg-teal-100': '#2dd4bf',
+      'bg-lime-100': '#a3e635',
+      'bg-fuchsia-100': '#e879f9',
+      'bg-gray-100': '#94a3b8',
+      'bg-slate-200': '#cbd5e1',
+      'bg-red-50': '#fca5a5',
+      'bg-pink-100': '#f472b6'
+    };
+    
+    // Attempt to match legacy class names
+    const bgPart = color.split(' ').find(c => c.startsWith('bg-')) || color.split(' ')[0];
+    return colorMap[bgPart] || '#94a3b8';
+  }, [color]);
 
   return (
     <mesh position={explodedPos} castShadow receiveShadow>
@@ -185,19 +195,21 @@ const Visualization3D: React.FC<Visualization3DProps> = ({ courses }) => {
         </div>
       </div>
 
-      <div className="flex-shrink-0 grid grid-cols-12 gap-2 h-10">
-        <div className="col-span-3 bg-white px-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2">
+      <div className="flex-shrink-0 flex flex-wrap gap-2">
+        <div className="flex-1 min-w-[120px] bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2 h-10">
           <span className="text-[8px] font-black text-slate-400 uppercase">Explode</span>
-          <input type="range" min="1" max="2.0" step="0.01" value={explosion} onChange={(e) => setExplosion(parseFloat(e.target.value))} className="flex-1 h-1" />
+          <input type="range" min="1" max="2.0" step="0.01" value={explosion} onChange={(e) => setExplosion(parseFloat(e.target.value))} className="flex-1 h-1 min-w-[50px]" />
         </div>
-        <div className="col-span-3 bg-white px-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2">
+        <div className="flex-1 min-w-[120px] bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2 h-10">
           <span className="text-[8px] font-black text-slate-400 uppercase">Alpha</span>
-          <input type="range" min="0.1" max="1" step="0.05" value={opacity} onChange={(e) => setOpacity(parseFloat(e.target.value))} className="flex-1 h-1" />
+          <input type="range" min="0.1" max="1" step="0.05" value={opacity} onChange={(e) => setOpacity(parseFloat(e.target.value))} className="flex-1 h-1 min-w-[50px]" />
         </div>
-        <div className="col-span-6 bg-white px-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2">
-           <span className="text-[8px] font-black text-slate-400 uppercase">W{weekRange[0]}-W{weekRange[1]}</span>
-           <input type="range" min="1" max="16" value={weekRange[0]} onChange={(e) => setWeekRange([Math.min(parseInt(e.target.value), weekRange[1]), weekRange[1]])} className="flex-1 h-1" />
-           <input type="range" min="1" max="16" value={weekRange[1]} onChange={(e) => setWeekRange([weekRange[0], Math.max(parseInt(e.target.value), weekRange[0])])} className="flex-1 h-1" />
+        <div className="w-full sm:w-auto sm:flex-[2] bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm flex items-center gap-2 h-10">
+           <span className="text-[8px] font-black text-slate-400 uppercase whitespace-nowrap">W{weekRange[0]}-W{weekRange[1]}</span>
+           <div className="flex-1 flex gap-1">
+             <input type="range" min="1" max="16" value={weekRange[0]} onChange={(e) => setWeekRange([Math.min(parseInt(e.target.value), weekRange[1]), weekRange[1]])} className="flex-1 h-1 min-w-[40px]" />
+             <input type="range" min="1" max="16" value={weekRange[1]} onChange={(e) => setWeekRange([weekRange[0], Math.max(parseInt(e.target.value), weekRange[0])])} className="flex-1 h-1 min-w-[40px]" />
+           </div>
         </div>
       </div>
     </div>

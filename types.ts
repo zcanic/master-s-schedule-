@@ -12,9 +12,10 @@ export interface Course {
   weeks: number[];
   type: CourseType;
   color: string;
+  location?: string;
 }
 
-export type AppMode = 'schedule' | 'review' | 'viz3d' | 'editor';
+export type AppMode = 'schedule' | 'review' | 'viz3d' | 'metro' | 'editor';
 
 export interface WeeklyIntensity {
   week: number;

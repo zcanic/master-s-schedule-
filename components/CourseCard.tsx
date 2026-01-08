@@ -32,12 +32,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, className, cou
   const textSize = isTiny ? 'text-[8px] sm:text-[10px]' : isCompact ? 'text-[9px] sm:text-xs' : 'text-[9px] sm:text-xs md:text-sm lg:text-base';
   const padding = isTiny ? 'p-0.5 sm:p-1' : isCompact ? 'p-1 sm:p-2' : 'p-1.5 sm:p-3';
 
+  const { color } = course;
+  const isHexColor = color?.startsWith('#');
+
   return (
     <div 
       role="button"
       tabIndex={0}
       onClick={() => onClick(course)}
       onKeyDown={handleKeyDown}
+      style={isHexColor ? { backgroundColor: color } : undefined}
       className={`
         w-full h-full border-b last:border-b-0
         transition-all duration-200 cursor-pointer select-none
@@ -47,18 +51,22 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, className, cou
         flex-1 min-h-0
         ${padding}
         ${className || 'course-animate-in'}
-        ${cardStyles}
+        ${color && !isHexColor ? color : cardStyles}
+        ${color && isHexColor ? 'text-white' : ''}
       `}
     >
       <div className={`${textSize} leading-tight font-black tracking-tighter sm:tracking-normal break-words max-w-full mobile-compact-text`}>
         {course.name}
       </div>
-      {/* Hide SSR badge if too tiny */}
-      {isSSR && !isTiny && (
-        <div className={`hidden sm:flex mt-1 opacity-50 items-center gap-1 uppercase tracking-widest font-black ${isCompact ? 'text-[6px]' : 'text-[8px]'}`}>
-          SSR
-        </div>
+      
+      {/* Location Badge (If available and space permits) */}
+      {course.location && !isTiny && (
+         <div className={`mt-0.5 sm:mt-1 font-bold truncate max-w-full ${isCompact ? 'text-[6px] opacity-70' : 'text-[7px] sm:text-[9px] opacity-80'}`}>
+            {course.location.replace(/【.*?】/, '')}
+         </div>
       )}
+
+
     </div>
   );
 };

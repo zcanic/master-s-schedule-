@@ -1,11 +1,12 @@
-
 import React, { useState, useMemo, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { Course, CourseType } from '../types';
-import { DAYS, ROWS } from '../constants';
+import { COURSES_DATA, COURSE_COLOR_PALETTE, DAYS, ROWS } from '../constants';
 
 interface DataEditorProps {
   courses: Course[];
   onUpdate: (courses: Course[]) => void;
+  onClose: () => void;
 }
 
 // Helper components for the Modal
@@ -64,6 +65,7 @@ const CourseModal: React.FC<{
   if (!course) return null;
 
   const [name, setName] = useState(course.name || '');
+  const [location, setLocation] = useState(course.location || '');
   const [day, setDay] = useState(course.day ?? 0);
   const [row, setRow] = useState(course.row ?? 0);
   const [type, setType] = useState<CourseType>(course.type || CourseType.NORMAL);
@@ -81,7 +83,8 @@ const CourseModal: React.FC<{
 
     onSave({
       id: course.id || Date.now().toString(),
-      name, day, row, weeks, type, color
+      name, day, row, weeks, type, color,
+      location: location || undefined
     });
   };
 
@@ -107,6 +110,16 @@ const CourseModal: React.FC<{
                  placeholder="e.g. Advanced AI"
                  value={name}
                  onChange={e => setName(e.target.value)}
+               />
+             </div>
+
+             <div>
+               <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Location</label>
+               <input 
+                 className="w-full text-sm font-bold border-b-2 border-slate-200 focus:border-indigo-500 outline-none py-2 bg-transparent placeholder-slate-300 transition-colors"
+                 placeholder="e.g. 教学楼301"
+                 value={location}
+                 onChange={e => setLocation(e.target.value)}
                />
              </div>
              
@@ -169,6 +182,7 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentCourse, setCurrentCourse] = useState<Partial<Course> | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* 1. Sort courses alphabetically (including Chinese Pinyin) */
@@ -183,7 +197,6 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
     setCurrentCourse({}); // Empty object for new
     setIsModalOpen(true);
   };
-
 
   const openEdit = (course: Course) => {
     setCurrentCourse(course);
@@ -207,9 +220,9 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
   };
 
   const exportCSV = () => {
-    const header = "id,name,day,row,type,weeks\n";
+    const header = "id,name,day,row,type,weeks,location\n";
     // Fix: Handle quotes properly in name
-    const body = courses.map(c => `${c.id},"${c.name.replace(/"/g, '""')}",${c.day},${c.row},${c.type},"${c.weeks.join('|')}"`).join('\n');
+    const body = courses.map(c => `${c.id},"${c.name.replace(/"/g, '""')}",${c.day},${c.row},${c.type},"${c.weeks.join('|')}", "${(c.location || '').replace(/"/g, '""')}"`).join('\n');
     const blob = new Blob(["\ufeff" + header + body], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -217,62 +230,191 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
     link.click();
   };
 
-  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const parseCSV = (content: string): Course[] => {
+    const lines = content.split('\n').filter(l => l.trim().length > 0);
+    // Skip header if it looks like one
+    const startIdx = lines[0].startsWith('id,') ? 1 : 0;
+    
+    return lines.slice(startIdx).map((line, idx) => {
+      // Robust regex for CSV parsing handles quotes
+      const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+      if (parts.length < 5) return null; // Invalid line
+
+      // Clean function
+      const clean = (s: string) => s.replace(/^"|"$/g, '').replace(/""/g, '"');
+      
+      // Re-assemble if simple split failed (simple fallback)
+      const simpleParts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
+      
+      const type = simpleParts[4] as CourseType;
+      return {
+        id: simpleParts[0] || Date.now().toString() + idx,
+        name: clean(simpleParts[1]),
+        day: parseInt(simpleParts[2]),
+        row: parseInt(simpleParts[3]),
+        type,
+        weeks: clean(simpleParts[5]).split('|').map(w => parseInt(w)).filter(n => !isNaN(n)),
+        color: type === CourseType.SSR ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-blue-100 text-blue-700 border-blue-200",
+        location: simpleParts[6] ? clean(simpleParts[6]) : undefined
+      };
+    }).filter(Boolean) as Course[];
+  };
+
+  const parseExcel = (data: any): Course[] => {
+    const workbook = XLSX.read(data, { type: 'binary' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    // Header: 1 means array of arrays
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as string[][];
+
+    console.log("Parsing Excel Data:", jsonData);
+
+    const newCourses: Course[] = [];
+  const courseColorMap = new Map<string, string>();
+
+  // Parsing configuration
+    // Excel Rows (0-based in array):
+    // 2: Slot 1 (08:00) -> Our Row 0
+    // ...
+    // 7: Slot 6 (19:30) -> Our Row 5
+
+    const ROW_MAP = [2, 3, 4, 5, 6, 7]; 
+    
+    ROW_MAP.forEach((excelRowIdx, ourRowIdx) => {
+      if (excelRowIdx >= jsonData.length) return;
+      const rowData = jsonData[excelRowIdx];
+
+      // Columns 1-7 correspond to Mon(0) - Sun(6)
+      for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+         const cellContent = rowData[dayIdx + 1]; // +1 because col 0 is "节次"
+         if (!cellContent || typeof cellContent !== 'string' || !cellContent.trim()) continue;
+
+         // FIX: Use simple newline split, handle \r\n just in case
+         const lines = cellContent.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+         
+         // Relaxed check: Accept if at least Name matches
+         if (lines.length === 0) continue;
+
+         const name = lines[0];
+         // Heuristic search for other fields
+         const weeksLine = lines.find(l => l.includes('周'));
+         // Location starts with 【 or is not name/weeks/time
+         const locationLine = lines.find(l => 
+             (l.startsWith('【') || l.includes('楼') || l.includes('室')) && 
+             l !== name && 
+             l !== weeksLine
+         ); 
+
+         let weeks: number[] = [];
+         if (weeksLine) {
+            // "1-8周", "2-4,6-16周", "3-12双周", "1-8单周"
+            const cleanWeeks = weeksLine.replace(/周.*$/, '').replace(/\[.*\]/, '');
+            const parts = cleanWeeks.split(/,|，/); // Handle Chinese comma
+            
+            parts.forEach(part => {
+               let rangeWeeks: number[] = [];
+               let isOdd = false;
+               let isEven = false;
+
+               if (part.includes('单')) isOdd = true;
+               if (part.includes('双')) isEven = true;
+               
+               const cleanPart = part.replace(/单|双|节/g, '');
+
+               if (cleanPart.includes('-')) {
+                  const [start, end] = cleanPart.split('-').map(Number);
+                  for (let i = start; i <= end; i++) rangeWeeks.push(i);
+               } else {
+                  const w = parseInt(cleanPart);
+                  if (!isNaN(w)) rangeWeeks.push(w);
+               }
+
+               if (isOdd) rangeWeeks = rangeWeeks.filter(w => w % 2 !== 0);
+               if (isEven) rangeWeeks = rangeWeeks.filter(w => w % 2 === 0);
+               
+               weeks.push(...rangeWeeks);
+            });
+         } else {
+            // Default 1-16 if not found
+            weeks = Array.from({length: 16}, (_, i) => i + 1);
+         }
+
+         // Remove duplicates and sort
+         weeks = [...new Set(weeks)].sort((a,b) => a-b);
+
+         // Assign Color consistently by course name
+         let color = courseColorMap.get(name);
+         if (!color) {
+             color = COURSE_COLOR_PALETTE[courseColorMap.size % COURSE_COLOR_PALETTE.length];
+             courseColorMap.set(name, color);
+         }
+
+         newCourses.push({
+           id: Date.now().toString() + Math.random().toString().slice(2,8),
+           name: name,
+           day: dayIdx,
+           row: ourRowIdx,
+           weeks: weeks,
+           type: CourseType.NORMAL, 
+           color: color, // Use the assigned palette color
+           location: locationLine || '未知地点'
+         });
+      }
+    });
+
+    return newCourses;
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const fileExt = file.name.split('.').pop()?.toLowerCase();
     const reader = new FileReader();
+
     reader.onload = (event) => {
       try {
-        const text = event.target?.result as string;
-        const lines = text.split('\n').filter(l => l.trim().length > 0);
-        // Skip header if it looks like one
-        const startIdx = lines[0].startsWith('id,') ? 1 : 0;
-        
-        const newCourses: Course[] = lines.slice(startIdx).map((line, idx) => {
-          // Robust regex for CSV parsing handles quotes
-          const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-          if (parts.length < 5) return null; // Invalid line
+         const result = event.target?.result;
+         let newCourses: Course[] = [];
 
-          // Clean function
-          const clean = (s: string) => s.replace(/^"|"$/g, '').replace(/""/g, '"');
-          
-          // Re-assemble if simple split failed (simple fallback)
-          // Actually, let's use the exact logic from before but wrapped safer
-          const simpleParts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // Previous logic was good
-          
-          const type = simpleParts[4] as CourseType;
-          return {
-            id: simpleParts[0] || Date.now().toString() + idx,
-            name: clean(simpleParts[1]),
-            day: parseInt(simpleParts[2]),
-            row: parseInt(simpleParts[3]),
-            type,
-            weeks: clean(simpleParts[5]).split('|').map(w => parseInt(w)).filter(n => !isNaN(n)),
-            color: type === CourseType.SSR ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-blue-100 text-blue-700 border-blue-200"
-          };
-        }).filter(Boolean) as Course[];
+         if (fileExt === 'csv') {
+            if (typeof result === 'string') {
+               newCourses = parseCSV(result);
+            }
+         } else if (fileExt === 'xlsx' || fileExt === 'xls') {
+             // For Excel, result is binary string
+             newCourses = parseExcel(result);
+         } else {
+             alert("Unsupported file format.");
+             return;
+         }
 
         if (newCourses.length > 0) {
-           if (confirm(`Found ${newCourses.length} courses. Overwrite existing data?`)) {
+           if (confirm(`Parsed ${newCourses.length} courses. Replace existing schedule?`)) {
              onUpdate(newCourses);
            }
         } else {
-           alert("Failed to parse CSV. Please check format.");
+           alert("Could not find valid courses in this file. Please check format.");
         }
       } catch (e) {
-        alert("Error reading file.");
-        console.error(e);
+        console.error("Import error:", e);
+        alert("Failed to parse file. Make sure it is a valid format.");
       }
     };
-    reader.readAsText(file);
-    // Reset inputs
+
+    if (fileExt === 'csv') {
+        reader.readAsText(file);
+    } else {
+        reader.readAsBinaryString(file);
+    }
+    
+    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
     <div className="h-full flex flex-col gap-4">
       {/* Action Bar */}
-      {/* Top Action Bar */}
       <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between flex-shrink-0">
          <div className="flex items-center gap-4 flex-1">
             <h2 className="text-lg font-black text-slate-800">DATA MANAGEMENT</h2>
@@ -280,8 +422,17 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
             <div className="text-xs font-bold text-slate-400 italic hidden sm:block">Detailed Planner View</div>
          </div>
          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
-           <input type="file" ref={fileInputRef} onChange={handleImportCSV} className="hidden" accept=".csv" />
-           <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-500 text-xs font-bold rounded-xl transition-colors text-center">Import CSV</button>
+           <input 
+             type="file" 
+             ref={fileInputRef} 
+             onChange={handleImport} 
+             className="hidden" 
+             accept=".csv, .xlsx, .xls" 
+           />
+           
+           <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-xs font-bold rounded-xl transition-colors text-center border border-emerald-200 shadow-sm">
+               Import Table
+           </button>
            <button onClick={exportCSV} className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-500 text-xs font-bold rounded-xl transition-colors text-center">Export CSV</button>
            <button onClick={openNew} className="col-span-2 sm:col-span-1 px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-xl shadowed transition-all flex items-center justify-center gap-2">
              <span>+ NEW COURSE</span>
