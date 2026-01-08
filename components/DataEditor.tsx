@@ -348,15 +348,34 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
                   courseColorMap.set(name, color);
               }
 
+              // Location Cleaning
+              let cleanLoc = locationLine || '未知地点';
+              cleanLoc = cleanLoc.replace(/【.*?】/g, '').replace(/\(.*?\)/g, '').replace(/（.*?）/g, '').trim();
+              
+              const locMatch = cleanLoc.match(/^([\u4e00-\u9fa5]+).*?([A-Za-z0-9\-]+)$/);
+              if (locMatch) {
+                  const building = locMatch[1];
+                  const room = locMatch[2];
+                  if (building.length > 0) {
+                      cleanLoc = building[0] + room;
+                  }
+              }
+ 
+              // Auto tag SSR
+              const SSR_NAMES = new Set([
+                "外语学习者的幸福学", "大数据基础设施", "离散数学", "交响音乐欣赏", "日本文学名著赏析"
+              ]);
+              const type = SSR_NAMES.has(name) ? CourseType.SSR : CourseType.NORMAL;
+
               newCourses.push({
                 id: Date.now().toString() + Math.random().toString().slice(2,8),
                 name: name,
                 day: dayIdx,
                 row: currentSlot,
                 weeks: weeks,
-                type: CourseType.NORMAL, 
+                type: type, 
                 color: color, 
-                location: locationLine || '未知地点'
+                location: cleanLoc
               });
            }
        }

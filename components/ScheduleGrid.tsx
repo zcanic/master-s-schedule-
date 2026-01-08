@@ -25,7 +25,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ week, courses, onSelectCour
   return (
     <div className="h-full flex flex-col">
       <div 
-        className="flex-1 grid grid-cols-[30px_repeat(6,_1fr)] sm:grid-cols-[50px_repeat(6,_1fr)] gap-[1px] bg-slate-200 border border-slate-200 rounded-xl overflow-hidden shadow-inner"
+        className="flex-1 grid grid-cols-[30px_repeat(6,_1fr)] sm:grid-cols-[50px_repeat(6,_1fr)] gap-0 bg-transparent rounded-xl overflow-hidden shadow-inner"
         style={{ gridTemplateRows: 'auto repeat(6, 1fr)' }}
       >
         {/* Header */}
@@ -43,7 +43,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ week, courses, onSelectCour
         {/* Rows */}
         {ROWS.map((rowLabel, rowIndex) => (
           <React.Fragment key={rowIndex}>
-            <div className="bg-slate-50/50 p-1 text-center border-t border-slate-100 flex flex-col justify-center items-center">
+            <div className="bg-slate-50/50 p-1 text-center border-none flex flex-col justify-center items-center">
               <div className="text-[9px] sm:text-sm font-black text-slate-700">{rowLabel.label}</div>
               <div className="hidden sm:block text-[7px] text-slate-400 font-bold uppercase tracking-tighter">{rowLabel.sub}</div>
             </div>
@@ -54,7 +54,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ week, courses, onSelectCour
               return (
                 <div 
                   key={`${dayIndex}-${rowIndex}`} 
-                  className="bg-white border-t border-l border-slate-100 relative flex flex-col overflow-hidden"
+                  className="bg-white border-none relative flex flex-col overflow-hidden"
                 >
                   <AnimatedCell courses={cellCourses} onSelectCourse={onSelectCourse} />
                 </div>
