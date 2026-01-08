@@ -60,8 +60,8 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, className, cou
       </div>
       
       {/* Location Badge (If available and space permits) */}
-      {course.location && !isTiny && (
-         <div className={`mt-0.5 sm:mt-1 font-bold truncate max-w-full ${isCompact ? 'text-[6px] opacity-70' : 'text-[7px] sm:text-[9px] opacity-80'}`}>
+      {course.location && (
+         <div className={`mt-0.5 sm:mt-1 font-bold truncate max-w-full leading-none ${isCompact ? 'text-[8px]' : 'text-[9px] sm:text-[10px]'}`}>
             {course.location.replace(/【.*?】/, '')}
          </div>
       )}

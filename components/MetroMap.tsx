@@ -201,8 +201,8 @@ const MetroMap: React.FC<MetroMapProps> = ({ courses }) => {
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.5}
-        maxZoom={2}
+        minZoom={0.1}
+        maxZoom={4}
         proOptions={{ hideAttribution: true }}
       >
         <Controls position="bottom-left" className="!m-4" /> 
