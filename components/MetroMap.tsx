@@ -1,5 +1,5 @@
 
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import ReactFlow, { 
   Node, 
   Edge, 
@@ -113,6 +113,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => 
 };
 
 const MetroMap: React.FC<MetroMapProps> = ({ courses }) => {
+  const [isLegendOpen, setIsLegendOpen] = useState(true);
   const { initialNodes, initialEdges } = useMemo(() => {
     const nodesMap = new Map<string, Node>();
     const edgesMap = new Map<string, Edge>();
@@ -209,15 +210,24 @@ const MetroMap: React.FC<MetroMapProps> = ({ courses }) => {
         <Background gap={24} color="#cbd5e1" variant={undefined} />
         
         {/* Legend - Top Left */}
-        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur p-4 rounded-2xl shadow-xl border border-slate-100 min-w-[160px] z-20">
-           <h4 className="text-xs font-black text-slate-800 mb-3 uppercase tracking-wider border-b border-slate-100 pb-2">Metro Lines</h4>
-           <div className="space-y-2">
-             {LINE_NAMES.map((name, i) => (
-               <div key={i} className="flex items-center gap-3">
-                 <div className="w-8 h-1.5 rounded-full shadow-sm" style={{ background: LINE_COLORS[i] }}></div>
-                 <span className="text-[10px] font-bold text-slate-600">{name} ({['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]})</span>
-               </div>
-             ))}
+        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur p-4 rounded-2xl shadow-xl border border-slate-100 min-w-[160px] z-20 transition-all duration-300">
+           <div 
+             className="flex items-center justify-between cursor-pointer"
+             onClick={() => setIsLegendOpen(!isLegendOpen)}
+           >
+             <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Metro Lines</h4>
+             <div className="text-slate-400 text-xs font-bold">{isLegendOpen ? '−' : '+'}</div>
+           </div>
+           
+           <div className={`overflow-hidden transition-all duration-300 ${isLegendOpen ? 'max-h-[300px] mt-3 border-t border-slate-100 pt-2 opacity-100' : 'max-h-0 mt-0 opacity-0'}`}>
+             <div className="space-y-2">
+               {LINE_NAMES.map((name, i) => (
+                 <div key={i} className="flex items-center gap-3">
+                   <div className="w-8 h-1.5 rounded-full shadow-sm" style={{ background: LINE_COLORS[i] }}></div>
+                   <span className="text-[10px] font-bold text-slate-600">{name} ({['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]})</span>
+                 </div>
+               ))}
+             </div>
            </div>
         </div>
       </ReactFlow>

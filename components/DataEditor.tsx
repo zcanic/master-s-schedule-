@@ -270,97 +270,97 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
     console.log("Parsing Excel Data:", jsonData);
 
     const newCourses: Course[] = [];
-  const courseColorMap = new Map<string, string>();
+    const courseColorMap = new Map<string, string>();
 
-  // Parsing configuration
-    // Excel Rows (0-based in array):
-    // 2: Slot 1 (08:00) -> Our Row 0
-    // ...
-    // 7: Slot 6 (19:30) -> Our Row 5
+    let currentSlot = -1;
 
-    const ROW_MAP = [2, 3, 4, 5, 6, 7]; 
-    
-    ROW_MAP.forEach((excelRowIdx, ourRowIdx) => {
-      if (excelRowIdx >= jsonData.length) return;
-      const rowData = jsonData[excelRowIdx];
+    // Iterate through all rows starting from index 2
+    for (let r = 2; r < jsonData.length; r++) {
+       const rowData = jsonData[r];
+       if (!rowData || rowData.length === 0) continue;
 
-      // Columns 1-7 correspond to Mon(0) - Sun(6)
-      for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-         const cellContent = rowData[dayIdx + 1]; // +1 because col 0 is "节次"
-         if (!cellContent || typeof cellContent !== 'string' || !cellContent.trim()) continue;
+       const col0 = (rowData[0] || '').toString();
 
-         // FIX: Use simple newline split, handle \r\n just in case
-         const lines = cellContent.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-         
-         // Relaxed check: Accept if at least Name matches
-         if (lines.length === 0) continue;
+       // Update current slot based on first column text
+       if (col0.includes('第1节')) currentSlot = 0;
+       else if (col0.includes('第2节')) currentSlot = 1;
+       else if (col0.includes('第3节')) currentSlot = 2;
+       else if (col0.includes('第4节')) currentSlot = 3;
+       else if (col0.includes('第5节')) currentSlot = 4;
+       else if (col0.includes('第6节')) currentSlot = 5;
+       else if (col0.trim().length > 0) currentSlot = -1; // Reset if non-empty but not a slot (e.g. "不排时间")
+       
+       // If we are in a valid slot
+       if (currentSlot !== -1 && currentSlot <= 5) {
+           // Columns 1-7 correspond to Mon(0) - Sun(6)
+           for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+              const cellContent = rowData[dayIdx + 1]; 
+              if (!cellContent || typeof cellContent !== 'string' || !cellContent.trim()) continue;
 
-         const name = lines[0];
-         // Heuristic search for other fields
-         const weeksLine = lines.find(l => l.includes('周'));
-         // Location starts with 【 or is not name/weeks/time
-         const locationLine = lines.find(l => 
-             (l.startsWith('【') || l.includes('楼') || l.includes('室')) && 
-             l !== name && 
-             l !== weeksLine
-         ); 
+              const lines = cellContent.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+              if (lines.length === 0) continue;
 
-         let weeks: number[] = [];
-         if (weeksLine) {
-            // "1-8周", "2-4,6-16周", "3-12双周", "1-8单周"
-            const cleanWeeks = weeksLine.replace(/周.*$/, '').replace(/\[.*\]/, '');
-            const parts = cleanWeeks.split(/,|，/); // Handle Chinese comma
-            
-            parts.forEach(part => {
-               let rangeWeeks: number[] = [];
-               let isOdd = false;
-               let isEven = false;
+              const name = lines[0];
+              const weeksLine = lines.find(l => l.includes('周'));
+              const locationLine = lines.find(l => 
+                  (l.startsWith('【') || l.includes('楼') || l.includes('室')) && 
+                  l !== name && 
+                  l !== weeksLine
+              ); 
 
-               if (part.includes('单')) isOdd = true;
-               if (part.includes('双')) isEven = true;
-               
-               const cleanPart = part.replace(/单|双|节/g, '');
+              let weeks: number[] = [];
+              if (weeksLine) {
+                 const cleanWeeks = weeksLine.replace(/周.*$/, '').replace(/\[.*\]/, '');
+                 const parts = cleanWeeks.split(/,|，/); 
+                 
+                 parts.forEach(part => {
+                    let rangeWeeks: number[] = [];
+                    let isOdd = false;
+                    let isEven = false;
 
-               if (cleanPart.includes('-')) {
-                  const [start, end] = cleanPart.split('-').map(Number);
-                  for (let i = start; i <= end; i++) rangeWeeks.push(i);
-               } else {
-                  const w = parseInt(cleanPart);
-                  if (!isNaN(w)) rangeWeeks.push(w);
-               }
+                    if (part.includes('单')) isOdd = true;
+                    if (part.includes('双')) isEven = true;
+                    
+                    const cleanPart = part.replace(/单|双|节/g, '');
 
-               if (isOdd) rangeWeeks = rangeWeeks.filter(w => w % 2 !== 0);
-               if (isEven) rangeWeeks = rangeWeeks.filter(w => w % 2 === 0);
-               
-               weeks.push(...rangeWeeks);
-            });
-         } else {
-            // Default 1-16 if not found
-            weeks = Array.from({length: 16}, (_, i) => i + 1);
-         }
+                    if (cleanPart.includes('-')) {
+                       const [start, end] = cleanPart.split('-').map(Number);
+                       for (let i = start; i <= end; i++) rangeWeeks.push(i);
+                    } else {
+                       const w = parseInt(cleanPart);
+                       if (!isNaN(w)) rangeWeeks.push(w);
+                    }
 
-         // Remove duplicates and sort
-         weeks = [...new Set(weeks)].sort((a,b) => a-b);
+                    if (isOdd) rangeWeeks = rangeWeeks.filter(w => w % 2 !== 0);
+                    if (isEven) rangeWeeks = rangeWeeks.filter(w => w % 2 === 0);
+                    
+                    weeks.push(...rangeWeeks);
+                 });
+              } else {
+                 weeks = Array.from({length: 16}, (_, i) => i + 1);
+              }
 
-         // Assign Color consistently by course name
-         let color = courseColorMap.get(name);
-         if (!color) {
-             color = COURSE_COLOR_PALETTE[courseColorMap.size % COURSE_COLOR_PALETTE.length];
-             courseColorMap.set(name, color);
-         }
+              weeks = [...new Set(weeks)].sort((a,b) => a-b);
 
-         newCourses.push({
-           id: Date.now().toString() + Math.random().toString().slice(2,8),
-           name: name,
-           day: dayIdx,
-           row: ourRowIdx,
-           weeks: weeks,
-           type: CourseType.NORMAL, 
-           color: color, // Use the assigned palette color
-           location: locationLine || '未知地点'
-         });
-      }
-    });
+              let color = courseColorMap.get(name);
+              if (!color) {
+                  color = COURSE_COLOR_PALETTE[courseColorMap.size % COURSE_COLOR_PALETTE.length];
+                  courseColorMap.set(name, color);
+              }
+
+              newCourses.push({
+                id: Date.now().toString() + Math.random().toString().slice(2,8),
+                name: name,
+                day: dayIdx,
+                row: currentSlot,
+                weeks: weeks,
+                type: CourseType.NORMAL, 
+                color: color, 
+                location: locationLine || '未知地点'
+              });
+           }
+       }
+    }
 
     return newCourses;
   };

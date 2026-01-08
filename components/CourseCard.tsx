@@ -30,7 +30,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, className, cou
   
   // Dynamic Sizing
   const textSize = isTiny ? 'text-[8px] sm:text-[10px]' : isCompact ? 'text-[9px] sm:text-xs' : 'text-[9px] sm:text-xs md:text-sm lg:text-base';
-  const padding = isTiny ? 'p-0.5 sm:p-1' : isCompact ? 'p-1 sm:p-2' : 'p-1.5 sm:p-3';
+  const padding = isTiny ? 'p-0.5 sm:p-1' : isCompact ? 'px-1 py-0.5 sm:p-2' : 'p-1.5 sm:p-3';
 
   const { color } = course;
   const isHexColor = color?.startsWith('#');
@@ -55,13 +55,13 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, className, cou
         ${color && isHexColor ? 'text-white' : ''}
       `}
     >
-      <div className={`${textSize} leading-tight font-black tracking-tighter sm:tracking-normal break-words max-w-full mobile-compact-text`}>
+      <div className={`${textSize} leading-none font-black tracking-tighter sm:tracking-normal break-words max-w-full mobile-compact-text`}>
         {course.name}
       </div>
       
       {/* Location Badge (If available and space permits) */}
       {course.location && (
-         <div className={`mt-0.5 sm:mt-1 font-bold truncate max-w-full leading-none ${isCompact ? 'text-[8px]' : 'text-[9px] sm:text-[10px]'}`}>
+         <div className={`mt-0.5 sm:mt-1 font-bold truncate max-w-full leading-none flex-shrink-0 ${isCompact ? 'text-[9px] scale-75 origin-center' : 'text-[9px] scale-90 sm:scale-100 sm:text-[10px] origin-top'}`}>
             {course.location.replace(/【.*?】/, '')}
          </div>
       )}
