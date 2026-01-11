@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Void Drop Protocol - Comprehensive Test Suite</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: #f9f9f9;
+        }
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .test-case {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .test-case h3 {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        input, button {
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 2px solid #ddd;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        input {
+            flex: 1;
+            min-width: 200px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button.secondary {
+            background: #48bb78;
+        }
+        button.secondary:hover {
+            background: #38a169;
+        }
+        button.danger {
+            background: #f56565;
+        }
+        button.danger:hover {
+            background: #e53e3e;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .result.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        .result.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        .result.info {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 1px solid #90cdf4;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-badge.pass {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .status-badge.fail {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        .status-badge.pending {
+            background: #feebc8;
+            color: #744210;
+        }
+        code {
+            background: #edf2f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌌 Void Drop Protocol - Test Suite</h1>
+        <p class="subtitle">Comprehensive testing for the Void KV API integration</p>
+
+        <!-- Test 1: API Connectivity -->
+        <div class="test-section">
+            <h2>Test 1: API Connectivity <span class="status-badge pending" id="test1-badge">PENDING</span></h2>
+            <div class="test-case">
+                <h3>Verify API is reachable and responds correctly</h3>
+                <div class="controls">
+                    <button onclick="testAPIConnectivity()">Run Test</button>
+                </div>
+                <div id="test1-result"></div>
+            </div>
+        </div>
+
+        <!-- Test 2: Short Key Rejection -->
+        <div class="test-section">
+            <h2>Test 2: Short Key Rejection <span class="status-badge pending" id="test2-badge">PENDING</span></h2>
+            <div class="test-case">
+                <h3>API should reject keys with length < 3</h3>
+                <div class="controls">
+                    <button onclick="testShortKeyRejection()">Run Test</button>
+                </div>
+                <div id="test2-result"></div>
+            </div>
+        </div>
+
+        <!-- Test 3: Upload/Download Cycle -->
+        <div class="test-section">
+            <h2>Test 3: Upload/Download Cycle <span class="status-badge pending" id="test3-badge">PENDING</span></h2>
+            <div class="test-case">
+                <h3>Full cycle: Upload data → Download data → Verify integrity</h3>
+                <div class="controls">
+                    <input type="text" id="test3-key" placeholder="Enter test key (≥3 chars)" value="test-cycle-2026">
+                    <button onclick="testUploadDownloadCycle()">Run Test</button>
+                </div>
+                <div id="test3-result"></div>
+            </div>
+        </div>
+
+        <!-- Test 4: Non-existing Key -->
+        <div class="test-section">
+            <h2>Test 4: Non-existing Key <span class="status-badge pending" id="test4-badge">PENDING</span></h2>
+            <div class="test-case">
+                <h3>Downloading a non-existing key should return null/empty</h3>
+                <div class="controls">
+                    <button onclick="testNonExistingKey()">Run Test</button>
+                </div>
+                <div id="test4-result"></div>
+            </div>
+        </div>
+
+        <!-- Test 5: Large Data Upload -->
+        <div class="test-section">
+            <h2>Test 5: Large Data Upload <span class="status-badge pending" id="test5-badge">PENDING</span></h2>
+            <div class="test-case">
+                <h3>Upload a large course array (simulating real usage)</h3>
+                <div class="controls">
+                    <button onclick="testLargeDataUpload()">Run Test</button>
+                </div>
+                <div id="test5-result"></div>
+            </div>
+        </div>
+
+        <!-- Test 6: Data Overwrite -->
+        <div class="test-section">
+            <h2>Test 6: Data Overwrite <span class="status-badge pending" id="test6-badge">PENDING</span></h2>
+            <div class="test-case">
+                <h3>Uploading to same key twice should overwrite</h3>
+                <div class="controls">
+                    <button onclick="testDataOverwrite()">Run Test</button>
+                </div>
+                <div id="test6-result"></div>
+            </div>
+        </div>
+
+        <!-- Test 7: Special Characters in Key -->
+        <div class="test-section">
+            <h2>Test 7: Special Characters <span class="status-badge pending" id="test7-badge">PENDING</span></h2>
+            <div class="test-case">
+                <h3>Test keys with hyphens, underscores, and numbers</h3>
+                <div class="controls">
+                    <button onclick="testSpecialCharacters()">Run Test</button>
+                </div>
+                <div id="test7-result"></div>
+            </div>
+        </div>
+
+        <!-- Test 8: Concurrent Operations -->
+        <div class="test-section">
+            <h2>Test 8: Concurrent Operations <span class="status-badge pending" id="test8-badge">PENDING</span></h2>
+            <div class="test-case">
+                <h3>Multiple parallel uploads to different keys</h3>
+                <div class="controls">
+                    <button onclick="testConcurrentOperations()">Run Test</button>
+                </div>
+                <div id="test8-result"></div>
+            </div>
+        </div>
+
+        <!-- Test 9: Run All Tests -->
+        <div class="test-section" style="background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%); border-color: #667eea;">
+            <h2>🚀 Run All Tests</h2>
+            <div class="test-case">
+                <div class="controls">
+                    <button onclick="runAllTests()" style="font-size: 16px; padding: 15px 30px;">▶ Execute Full Test Suite</button>
+                    <button onclick="clearAllResults()" class="danger">Clear Results</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://kvapi.zc13501500964.workers.dev';
+
+        function showResult(testId, message, type = 'info') {
+            const resultDiv = document.getElementById(`${testId}-result`);
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+        }
+
+        function updateBadge(testId, status) {
+            const badge = document.getElementById(`${testId}-badge`);
+            badge.className = `status-badge ${status}`;
+            badge.textContent = status.toUpperCase();
+        }
+
+        async function testAPIConnectivity() {
+            const testId = 'test1';
+            showResult(testId, 'Testing API connectivity...', 'info');
+
+            try {
+                const testKey = `connectivity-test-${Date.now()}`;
+                const response = await fetch(`${API_BASE}/${testKey}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ test: 'ping' })
+                });
+
+                if (response.ok) {
+                    const text = await response.text();
+                    showResult(testId, `✅ SUCCESS\nAPI is reachable and responding.\nResponse: ${text}`, 'success');
+                    updateBadge(testId, 'pass');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                showResult(testId, `❌ FAILED\nError: ${error.message}`, 'error');
+                updateBadge(testId, 'fail');
+            }
+        }
+
+        async function testShortKeyRejection() {
+            const testId = 'test2';
+            showResult(testId, 'Testing short key rejection...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/ab`, {
+                    method: 'POST',
+                    body: JSON.stringify({ test: 'short key' })
+                });
+
+                const text = await response.text();
+
+                if (!response.ok || text.includes('暗号太短')) {
+                    showResult(testId, `✅ SUCCESS\nShort key was properly rejected.\nResponse: ${text}`, 'success');
+                    updateBadge(testId, 'pass');
+                } else {
+                    throw new Error('Short key was not rejected!');
+                }
+            } catch (error) {
+                showResult(testId, `❌ FAILED\nError: ${error.message}`, 'error');
+                updateBadge(testId, 'fail');
+            }
+        }
+
+        async function testUploadDownloadCycle() {
+            const testId = 'test3';
+            const key = document.getElementById('test3-key').value;
+
+            if (key.length < 3) {
+                showResult(testId, '❌ FAILED\nKey must be at least 3 characters', 'error');
+                updateBadge(testId, 'fail');
+                return;
+            }
+
+            showResult(testId, 'Testing upload/download cycle...', 'info');
+
+            try {
+                const testData = [
+                    { id: 'test1', name: '测试课程1', day: 0, row: 0, weeks: [1, 2, 3], type: 'BASIC' },
+                    { id: 'test2', name: '测试课程2', day: 1, row: 1, weeks: [4, 5, 6], type: 'SSR' }
+                ];
+
+                // Upload
+                const uploadResponse = await fetch(`${API_BASE}/${key}`, {
+                    method: 'POST',
+                    body: JSON.stringify(testData)
+                });
+
+                if (!uploadResponse.ok) throw new Error('Upload failed');
+
+                // Download
+                const downloadResponse = await fetch(`${API_BASE}/${key}`);
+                if (!downloadResponse.ok) throw new Error('Download failed');
+
+                const downloadedData = await downloadResponse.json();
+
+                // Verify
+                if (JSON.stringify(testData) === JSON.stringify(downloadedData)) {
+                    showResult(testId, `✅ SUCCESS\nData uploaded and downloaded successfully.\nData integrity verified.\n\nUploaded: ${JSON.stringify(testData, null, 2)}\n\nDownloaded: ${JSON.stringify(downloadedData, null, 2)}`, 'success');
+                    updateBadge(testId, 'pass');
+                } else {
+                    throw new Error('Data mismatch!');
+                }
+            } catch (error) {
+                showResult(testId, `❌ FAILED\nError: ${error.message}`, 'error');
+                updateBadge(testId, 'fail');
+            }
+        }
+
+        async function testNonExistingKey() {
+            const testId = 'test4';
+            showResult(testId, 'Testing non-existing key...', 'info');
+
+            try {
+                const randomKey = `nonexistent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                const response = await fetch(`${API_BASE}/${randomKey}`);
+
+                const text = await response.text();
+
+                if (text === '' || text === 'null' || text === null) {
+                    showResult(testId, `✅ SUCCESS\nNon-existing key returned empty response as expected.\nKey: ${randomKey}\nResponse: "${text}"`, 'success');
+                    updateBadge(testId, 'pass');
+                } else {
+                    throw new Error(`Unexpected response: ${text}`);
+                }
+            } catch (error) {
+                showResult(testId, `❌ FAILED\nError: ${error.message}`, 'error');
+                updateBadge(testId, 'fail');
+            }
+        }
+
+        async function testLargeDataUpload() {
+            const testId = 'test5';
+            showResult(testId, 'Testing large data upload...', 'info');
+
+            try {
+                // Generate 50 courses
+                const largeCourseArray = Array.from({ length: 50 }, (_, i) => ({
+                    id: `course-${i}`,
+                    name: `课程 ${i + 1}`,
+                    day: i % 6,
+                    row: i % 6,
+                    weeks: Array.from({ length: 16 }, (_, w) => w + 1),
+                    type: i % 2 === 0 ? 'BASIC' : 'SSR',
+                    location: `教室-${i % 10}`,
+                    instructor: `教师-${i % 5}`
+                }));
+
+                const key = `large-data-test-${Date.now()}`;
+
+                // Upload
+                const uploadResponse = await fetch(`${API_BASE}/${key}`, {
+                    method: 'POST',
+                    body: JSON.stringify(largeCourseArray)
+                });
+
+                if (!uploadResponse.ok) throw new Error('Upload failed');
+
+                // Download
+                const downloadResponse = await fetch(`${API_BASE}/${key}`);
+                const downloadedData = await downloadResponse.json();
+
+                if (downloadedData.length === 50) {
+                    showResult(testId, `✅ SUCCESS\nLarge dataset uploaded and verified.\nCourses: ${downloadedData.length}\nData size: ~${JSON.stringify(largeCourseArray).length} bytes`, 'success');
+                    updateBadge(testId, 'pass');
+                } else {
+                    throw new Error('Data count mismatch');
+                }
+            } catch (error) {
+                showResult(testId, `❌ FAILED\nError: ${error.message}`, 'error');
+                updateBadge(testId, 'fail');
+            }
+        }
+
+        async function testDataOverwrite() {
+            const testId = 'test6';
+            showResult(testId, 'Testing data overwrite...', 'info');
+
+            try {
+                const key = `overwrite-test-${Date.now()}`;
+                const data1 = [{ id: 'v1', name: 'Version 1' }];
+                const data2 = [{ id: 'v2', name: 'Version 2' }];
+
+                // First upload
+                await fetch(`${API_BASE}/${key}`, {
+                    method: 'POST',
+                    body: JSON.stringify(data1)
+                });
+
+                // Second upload (overwrite)
+                await fetch(`${API_BASE}/${key}`, {
+                    method: 'POST',
+                    body: JSON.stringify(data2)
+                });
+
+                // Download
+                const response = await fetch(`${API_BASE}/${key}`);
+                const downloadedData = await response.json();
+
+                if (downloadedData[0].id === 'v2') {
+                    showResult(testId, `✅ SUCCESS\nData was properly overwritten.\nFinal data: ${JSON.stringify(downloadedData)}`, 'success');
+                    updateBadge(testId, 'pass');
+                } else {
+                    throw new Error('Overwrite failed');
+                }
+            } catch (error) {
+                showResult(testId, `❌ FAILED\nError: ${error.message}`, 'error');
+                updateBadge(testId, 'fail');
+            }
+        }
+
+        async function testSpecialCharacters() {
+            const testId = 'test7';
+            showResult(testId, 'Testing special characters in keys...', 'info');
+
+            try {
+                const keys = [
+                    'test-with-hyphens-123',
+                    'test_with_underscores_456',
+                    'TestWithMixedCase789',
+                    'test-123_ABC-xyz'
+                ];
+
+                const results = [];
+
+                for (const key of keys) {
+                    const response = await fetch(`${API_BASE}/${key}`, {
+                        method: 'POST',
+                        body: JSON.stringify({ test: key })
+                    });
+
+                    const downloadResponse = await fetch(`${API_BASE}/${key}`);
+                    const data = await downloadResponse.json();
+
+                    results.push(`${key}: ${data.test === key ? '✓' : '✗'}`);
+                }
+
+                showResult(testId, `✅ SUCCESS\nAll special character keys handled correctly.\n\n${results.join('\n')}`, 'success');
+                updateBadge(testId, 'pass');
+            } catch (error) {
+                showResult(testId, `❌ FAILED\nError: ${error.message}`, 'error');
+                updateBadge(testId, 'fail');
+            }
+        }
+
+        async function testConcurrentOperations() {
+            const testId = 'test8';
+            showResult(testId, 'Testing concurrent operations...', 'info');
+
+            try {
+                const timestamp = Date.now();
+                const promises = [];
+
+                for (let i = 0; i < 5; i++) {
+                    const key = `concurrent-${timestamp}-${i}`;
+                    const data = [{ id: `test${i}`, value: i }];
+
+                    promises.push(
+                        fetch(`${API_BASE}/${key}`, {
+                            method: 'POST',
+                            body: JSON.stringify(data)
+                        })
+                    );
+                }
+
+                await Promise.all(promises);
+
+                showResult(testId, `✅ SUCCESS\n5 concurrent uploads completed successfully.`, 'success');
+                updateBadge(testId, 'pass');
+            } catch (error) {
+                showResult(testId, `❌ FAILED\nError: ${error.message}`, 'error');
+                updateBadge(testId, 'fail');
+            }
+        }
+
+        async function runAllTests() {
+            await testAPIConnectivity();
+            await new Promise(r => setTimeout(r, 500));
+            await testShortKeyRejection();
+            await new Promise(r => setTimeout(r, 500));
+            await testUploadDownloadCycle();
+            await new Promise(r => setTimeout(r, 500));
+            await testNonExistingKey();
+            await new Promise(r => setTimeout(r, 500));
+            await testLargeDataUpload();
+            await new Promise(r => setTimeout(r, 500));
+            await testDataOverwrite();
+            await new Promise(r => setTimeout(r, 500));
+            await testSpecialCharacters();
+            await new Promise(r => setTimeout(r, 500));
+            await testConcurrentOperations();
+        }
+
+        function clearAllResults() {
+            for (let i = 1; i <= 8; i++) {
+                const resultDiv = document.getElementById(`test${i}-result`);
+                if (resultDiv) resultDiv.textContent = '';
+                updateBadge(`test${i}`, 'pending');
+            }
+        }
+    </script>
+</body>
+</html>

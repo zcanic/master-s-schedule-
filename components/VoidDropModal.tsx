@@ -109,106 +109,106 @@ const VoidDropModal: React.FC<VoidDropModalProps> = ({ isOpen, onClose, courses,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fade-in-gentle" onClick={onClose}>
-      <div className="bg-white max-w-lg w-full rounded-3xl shadow-2xl relative border border-slate-200 overflow-hidden" onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
-        <div className="bg-gradient-to-r from-slate-900 to-slate-700 px-6 py-5 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.2),transparent_50%)]"></div>
-          <h2 className="text-2xl font-black text-white relative z-10 flex items-center gap-3">
-            <span className="text-3xl">🌌</span>
-            虚空投送
-          </h2>
-          <p className="text-xs text-slate-300 mt-1 relative z-10">Void Drop Protocol — 零门槛数据广播站</p>
-        </div>
-
-        {/* Warning Zone */}
-        {showWarning && (
-          <div className="mx-6 mt-6 bg-red-50 border-2 border-red-200 rounded-xl p-4 relative">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl flex-shrink-0">⚠️</span>
-              <div className="flex-1">
-                <h3 className="text-sm font-black text-red-700 mb-1">DANGER ZONE — 公共频段警告</h3>
-                <p className="text-xs text-red-600 leading-relaxed mb-2">
-                  这是一个完全开放的虚空频段。使用简单暗号（如 <code className="bg-red-100 px-1 py-0.5 rounded font-mono">123</code>）会导致数据被他人覆盖。
-                </p>
-                <p className="text-xs text-red-600 leading-relaxed font-bold">
-                  请使用高熵值暗号（如 <code className="bg-red-100 px-1 py-0.5 rounded font-mono">correct-horse-battery-2026</code>）作为隐形密码。数据安全责任自负。
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowWarning(false)}
-              className="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xs font-bold"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-
-        {/* Input Section */}
-        <div className="px-6 py-6">
-          <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">
-            虚空暗号 (Void Key)
-          </label>
-          <input
-            type="text"
-            value={voidKey}
-            onChange={(e) => {
-              setVoidKey(e.target.value);
-              resetStatus();
-            }}
-            placeholder="输入你的暗号（≥3位）"
-            className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-slate-900 outline-none text-sm font-bold transition-all"
-          />
-
-          {/* Status Message */}
-          {message && (
-            <div className={`mt-3 px-4 py-2 rounded-lg text-xs font-bold ${
-              status === 'success' ? 'bg-green-50 text-green-700' :
-              status === 'error' ? 'bg-red-50 text-red-700' :
-              'bg-blue-50 text-blue-700'
-            }`}>
-              {message}
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="px-6 pb-6 flex gap-3">
-          <button
-            onClick={handleUpload}
-            disabled={status === 'uploading' || status === 'downloading'}
-            className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-black text-sm uppercase tracking-wide hover:bg-slate-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all active:scale-95"
-          >
-            {status === 'uploading' ? '广播中...' : '📡 上传到虚空'}
-          </button>
-          <button
-            onClick={handleDownload}
-            disabled={status === 'uploading' || status === 'downloading'}
-            className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-wide hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all active:scale-95"
-          >
-            {status === 'downloading' ? '接收中...' : '📥 从虚空读取'}
-          </button>
-        </div>
-
-        {/* Info Footer */}
-        <div className="px-6 pb-6 pt-0">
-          <div className="bg-slate-50 rounded-xl p-4 text-xs text-slate-500 leading-relaxed">
-            <p className="font-bold mb-2">💡 工作原理</p>
-            <p className="mb-1">• <strong>上传</strong>: 将当前课表覆盖写入云端暗号频段</p>
-            <p className="mb-1">• <strong>下载</strong>: 从云端读取数据并覆盖本地课表</p>
-            <p className="text-[10px] text-slate-400 mt-2">⚡ 本地优先 (Local-First)，云端仅作临时传输</p>
-          </div>
-        </div>
-
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in-gentle" onClick={onClose}>
+      <div className="bg-white max-w-[360px] w-full rounded-[32px] shadow-2xl relative flex flex-col p-6 max-h-[85vh] overflow-y-auto hide-scrollbar" onClick={e => e.stopPropagation()}>
+        
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white font-black transition-all z-20"
+          className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors z-20"
         >
-          ✕
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
+
+        {/* Simplified Header */}
+        <div className="text-center mt-2 mb-8">
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center justify-center gap-2">
+                <span className="text-2xl">🌌</span>
+                虚空投送
+            </h2>
+             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Void Drop Protocol</p>
+        </div>
+
+        <div className="flex flex-col gap-5">
+            {/* Input */}
+            <div>
+               <label className="block text-center text-xs font-black text-slate-400 uppercase tracking-widest mb-3">
+                 虚空暗号 (Void Key)
+               </label>
+               <input
+                type="text"
+                value={voidKey}
+                onChange={(e) => {
+                  setVoidKey(e.target.value);
+                  resetStatus();
+                }}
+                className="w-full text-center text-2xl font-black text-slate-800 bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 focus:outline-none focus:border-indigo-500 focus:bg-white transition-all placeholder:text-slate-200"
+                placeholder="123456"
+               />
+            </div>
+
+            {/* Status Message Area */}
+            {message && (
+                <div className={`p-4 rounded-2xl flex items-start gap-3 transition-all ${
+                  status === 'success' ? 'bg-[#ECFDF5]' : 
+                  status === 'error' ? 'bg-red-50' :
+                  'bg-blue-50'
+                }`}>
+                    {/* Icon Box */}
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm ${
+                         status === 'success' ? 'bg-emerald-500 text-white' : 
+                         status === 'error' ? 'bg-red-500 text-white' : 'bg-blue-500 text-white'
+                    }`}>
+                        {status === 'success' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                        {status === 'error' && <span className="font-bold text-xs">✕</span>}
+                        {(status === 'uploading' || status === 'downloading') && <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>}
+                    </div>
+                    
+                    <div className={`text-sm font-bold leading-tight break-all ${
+                        status === 'success' ? 'text-emerald-800' :
+                        status === 'error' ? 'text-red-700' :
+                        'text-blue-700'
+                    }`}>
+                        {message.replace(/✅|❌|📡|📥/g, '').trim()}
+                    </div>
+                </div>
+            )}
+
+            {/* Actions Stack */}
+            <div className="flex flex-col gap-3">
+               <button
+                 onClick={handleUpload}
+                 disabled={status === 'uploading' || status === 'downloading'}
+                 className="w-full bg-slate-800 text-white py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 shadow-lg shadow-slate-200 hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+               >
+                  <span className="text-lg group-hover:-translate-y-1 transition-transform duration-300">📡</span>
+                  <span>上传到虚空</span>
+               </button>
+               
+               <button
+                 onClick={handleDownload}
+                 disabled={status === 'uploading' || status === 'downloading'}
+                 className="w-full bg-slate-100 text-slate-600 border border-slate-200 py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 hover:bg-slate-200 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+               >
+                  <span className="text-lg group-hover:-translate-y-1 transition-transform duration-300">📥</span>
+                  <span>从虚空读取</span>
+               </button>
+            </div>
+
+             {/* Info */}
+             <div className="bg-slate-50 rounded-2xl p-5 text-[11px] text-slate-400 leading-relaxed font-medium">
+                <div className="flex items-center gap-2 mb-2 text-slate-600 font-bold">
+                    <span>💡</span>
+                    <span>工作原理</span>
+                </div>
+                <div className="space-y-1.5 pl-1">
+                    <p>• <strong>上传</strong>：将当前课表覆盖写入云端暗号频段</p>
+                    <p>• <strong>下载</strong>：从云端读取数据并覆盖本地课表</p>
+                    <p className="mt-2 text-[10px] text-slate-300">⚡ 本地优先 (Local-First)，云端仅作临时传输</p>
+                </div>
+             </div>
+        </div>
+
       </div>
     </div>
   );

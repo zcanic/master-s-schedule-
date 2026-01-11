@@ -304,7 +304,7 @@ const App: React.FC = () => {
 
       {/* Mobile Bottom Edit Button (Shortened) */}
       {activeMode !== 'editor' && (
-        <div className="md:hidden flex-shrink-0 mt-auto pt-2 pb-safe flex justify-center">
+        <div className="md:hidden flex-shrink-0 my-2 flex justify-center">
           <button
             onClick={() => setActiveMode('editor')}
             className={`w-3/4 glass-panel py-3 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 ${activeMode === 'editor' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white text-slate-500'}`}
