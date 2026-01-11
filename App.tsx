@@ -82,6 +82,14 @@ const App: React.FC = () => {
   // State for About Capsule
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
+  // Handle week change from swipe (delta: -1 for prev, +1 for next)
+  const handleWeekChange = (delta: number) => {
+      const newWeek = currentWeek + delta;
+      if (newWeek >= 1 && newWeek <= 16) {
+          setCurrentWeek(newWeek);
+      }
+  };
+
   return (
     <div className="h-full w-full p-2 sm:p-4 md:p-6 flex flex-col gap-3 overflow-hidden">
       {/* Header - Fixed Height Area */}
@@ -198,7 +206,7 @@ const App: React.FC = () => {
            {/* Content with Fade Transition */}
            <div key={activeMode} className="flex-1 flex flex-col h-full animate-fade-in-gentle">
               {activeMode === 'schedule' ? (
-                <ScheduleGrid week={currentWeek} courses={courses} onSelectCourse={setSelectedCourse} />
+                <ScheduleGrid week={currentWeek} courses={courses} onSelectCourse={setSelectedCourse} onWeekChange={handleWeekChange} />
               ) : activeMode === 'review' ? (
                 <ReviewMode courses={courses} />
               ) : activeMode === 'viz3d' ? (

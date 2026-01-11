@@ -22,6 +22,11 @@ const ReviewMode: React.FC<ReviewModeProps> = ({ courses }) => {
     return courses.filter(c => c.day === day && c.row === row);
   };
 
+  const hasSaturdayCourses = useMemo(() => courses.some(c => c.day === 5), [courses]);
+  const visibleDays = hasSaturdayCourses ? DAYS : DAYS.slice(0, 5);
+  const visibleDayIndices = hasSaturdayCourses ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4];
+  const gridColsClass = hasSaturdayCourses ? 'grid-cols-[30px_repeat(6,1fr)]' : 'grid-cols-[30px_repeat(5,1fr)]';
+
   const formatWeeks = (weeks: number[]) => {
     if (weeks.length === 0) return '';
     // Simplify display: finding ranges
@@ -75,9 +80,9 @@ const ReviewMode: React.FC<ReviewModeProps> = ({ courses }) => {
       <div className="flex-1 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden shadow-inner flex flex-col relative">
         <div className="absolute inset-0 flex flex-col">
           {/* Grid Header */}
-          <div className="flex-shrink-0 grid grid-cols-[30px_repeat(6,1fr)] bg-slate-50 border-b border-slate-200">
+          <div className={`flex-shrink-0 grid ${gridColsClass} bg-slate-50 border-b border-slate-200`}>
             <div className="h-6 flex items-center justify-center text-[7px] font-black text-slate-400">#</div>
-            {DAYS.map((day, i) => (
+            {visibleDays.map((day, i) => (
               <div key={i} className="h-6 flex items-center justify-center border-l border-slate-100">
                 <span className="text-[9px] font-black text-slate-600 uppercase">{day.label}</span>
               </div>
@@ -87,14 +92,14 @@ const ReviewMode: React.FC<ReviewModeProps> = ({ courses }) => {
           {/* Grid Body - Flex Grow to Fill */}
           <div className="flex-1 grid grid-rows-6">
             {ROWS.map((row, rowIndex) => (
-              <div key={rowIndex} className="grid grid-cols-[30px_repeat(6,1fr)] border-t border-slate-200 first:border-t-0">
+              <div key={rowIndex} className={`grid ${gridColsClass} border-t border-slate-200 first:border-t-0`}>
                 {/* Row Label */}
                 <div className="bg-slate-50/50 flex items-center justify-center border-r border-slate-200">
                    <span className="text-[8px] font-black text-slate-500">{row.label}</span>
                 </div>
-                
+
                 {/* Cells */}
-                {[0, 1, 2, 3, 4, 5].map(dayIndex => {
+                {visibleDayIndices.map(dayIndex => {
                   const cellCourses = getCoursesForCell(dayIndex, rowIndex);
                   return (
                     <div key={dayIndex} className="bg-white border-l border-slate-100 relative p-0.5 overflow-hidden group hover:bg-slate-50 transition-colors">
