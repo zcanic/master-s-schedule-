@@ -47,6 +47,7 @@ const Voxel: React.FC<VoxelProps> = ({ position, color, isSSR, opacity, explosio
     };
     
     // Attempt to match legacy class names
+    if (!color) return '#94a3b8';
     const bgPart = color.split(' ').find(c => c.startsWith('bg-')) || color.split(' ')[0];
     return colorMap[bgPart] || '#94a3b8';
   }, [color]);
