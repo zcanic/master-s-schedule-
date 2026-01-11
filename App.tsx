@@ -7,6 +7,7 @@ import ReviewMode from './components/ReviewMode';
 import Visualization3D from './components/Visualization3D';
 import DataEditor from './components/DataEditor';
 import MetroMap from './components/MetroMap';
+import VoidDropModal from './components/VoidDropModal';
 
 const App: React.FC = () => {
   const [currentWeek, setCurrentWeek] = useState<number>(1);
@@ -47,16 +48,43 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem('zcanic_courses_v7');
-    if (saved) {
-      try {
-        setCourses(JSON.parse(saved));
-      } catch (e) {
+    const initializeCourses = async () => {
+      const saved = localStorage.getItem('zcanic_courses_v7');
+      const savedVoidKey = localStorage.getItem('zcanic_void_key');
+
+      // If we have a saved Void Key, try to fetch from cloud first
+      if (savedVoidKey && savedVoidKey.length >= 3) {
+        try {
+          const response = await fetch(`https://kvapi.zc13501500964.workers.dev/${savedVoidKey}`);
+          if (response.ok) {
+            const text = await response.text();
+            if (text && text !== 'null') {
+              const cloudData = JSON.parse(text);
+              if (Array.isArray(cloudData) && cloudData.length > 0) {
+                setCourses(cloudData);
+                localStorage.setItem('zcanic_courses_v7', JSON.stringify(cloudData));
+                return; // Successfully loaded from cloud
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to fetch from Void on startup, falling back to local/mock data');
+        }
+      }
+
+      // Fallback to local storage or mock data
+      if (saved) {
+        try {
+          setCourses(JSON.parse(saved));
+        } catch (e) {
+          setCourses(COURSES_DATA);
+        }
+      } else {
         setCourses(COURSES_DATA);
       }
-    } else {
-      setCourses(COURSES_DATA);
-    }
+    };
+
+    initializeCourses();
   }, []);
 
   useEffect(() => {
@@ -81,6 +109,9 @@ const App: React.FC = () => {
 
   // State for About Capsule
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+
+  // State for Void Drop Modal
+  const [isVoidDropOpen, setIsVoidDropOpen] = useState(false);
 
   // Handle week change from swipe (delta: -1 for prev, +1 for next)
   const handleWeekChange = (delta: number) => {
@@ -120,7 +151,17 @@ const App: React.FC = () => {
                        Reset Data
                      </button>
                      <div className="w-[1px] h-3 bg-slate-200"></div>
-                     <button 
+                     <button
+                       onClick={(e) => {
+                          e.stopPropagation();
+                          setIsVoidDropOpen(true);
+                       }}
+                       className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 whitespace-nowrap flex items-center gap-1"
+                     >
+                       🌌 Void Drop
+                     </button>
+                     <div className="w-[1px] h-3 bg-slate-200"></div>
+                     <button
                        onClick={(e) => {
                           e.stopPropagation();
                           if(confirm("Go to Github project page?")) {
@@ -264,14 +305,22 @@ const App: React.FC = () => {
       {/* Mobile Bottom Edit Button (Shortened) */}
       {activeMode !== 'editor' && (
         <div className="md:hidden flex-shrink-0 mt-auto pt-2 pb-safe flex justify-center">
-          <button 
-            onClick={() => setActiveMode('editor')} 
+          <button
+            onClick={() => setActiveMode('editor')}
             className={`w-3/4 glass-panel py-3 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 ${activeMode === 'editor' ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white text-slate-500'}`}
           >
             <span>✏️ EDIT DATA</span>
           </button>
         </div>
       )}
+
+      {/* Void Drop Modal */}
+      <VoidDropModal
+        isOpen={isVoidDropOpen}
+        onClose={() => setIsVoidDropOpen(false)}
+        courses={courses}
+        onCoursesUpdate={updateCourses}
+      />
     </div>
   );
 };
