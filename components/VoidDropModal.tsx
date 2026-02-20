@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Course } from '../types';
+import { normalizeCourses } from '../courseValidation';
 
 interface VoidDropModalProps {
   isOpen: boolean;
@@ -19,10 +20,14 @@ const VoidDropModal: React.FC<VoidDropModalProps> = ({ isOpen, onClose, courses,
 
   // Load saved void key on mount
   useEffect(() => {
-    const savedKey = localStorage.getItem(VOID_KEY_STORAGE);
-    if (savedKey) {
-      setVoidKey(savedKey);
-      setShowWarning(false);
+    try {
+      const savedKey = localStorage.getItem(VOID_KEY_STORAGE);
+      if (savedKey) {
+        setVoidKey(savedKey);
+        setShowWarning(false);
+      }
+    } catch (e) {
+      console.warn('Unable to read Void key from local storage.');
     }
   }, []);
 
@@ -48,7 +53,11 @@ const VoidDropModal: React.FC<VoidDropModalProps> = ({ isOpen, onClose, courses,
       if (response.ok) {
         setStatus('success');
         setMessage(`✅ 已成功广播到频段 [${voidKey}]`);
-        localStorage.setItem(VOID_KEY_STORAGE, voidKey);
+        try {
+          localStorage.setItem(VOID_KEY_STORAGE, voidKey);
+        } catch (e) {
+          console.warn('Unable to store Void key locally.');
+        }
         setShowWarning(false);
       } else {
         throw new Error('上传失败');
@@ -81,13 +90,17 @@ const VoidDropModal: React.FC<VoidDropModalProps> = ({ isOpen, onClose, courses,
           return;
         }
 
-        const data = JSON.parse(text);
+        const data = normalizeCourses(JSON.parse(text));
 
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           onCoursesUpdate(data);
           setStatus('success');
-          setMessage(`✅ 已从频段 [${voidKey}] 接收数据`);
-          localStorage.setItem(VOID_KEY_STORAGE, voidKey);
+          setMessage(`✅ 已从频段 [${voidKey}] 接收 ${data.length} 条数据`);
+          try {
+            localStorage.setItem(VOID_KEY_STORAGE, voidKey);
+          } catch (e) {
+            console.warn('Unable to store Void key locally.');
+          }
           setShowWarning(false);
         } else {
           throw new Error('数据格式错误');

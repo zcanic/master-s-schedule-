@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Course, CourseType } from '../types';
 import { COURSES_DATA, COURSE_COLOR_PALETTE, DAYS, ROWS } from '../constants';
+import { normalizeCourse, normalizeCourses } from '../courseValidation';
 
 interface DataEditorProps {
   courses: Course[];
@@ -29,9 +30,9 @@ const WeekSelector: React.FC<{ value: number[], onChange: (w: number[]) => void 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2 mb-2">
-         {['all', 'none', 'odd', 'even', 'p1', 'p2'].map(t => (
+         {(['all', 'none', 'odd', 'even', 'p1', 'p2'] as const).map(t => (
            <button 
-             key={t} onClick={() => setRange(t as any)}
+             key={t} onClick={() => setRange(t)}
              className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-500 text-[10px] uppercase font-bold rounded-md"
            >
              {{all:'全选', none:'清空', odd:'单周', even:'双周', p1:'1-8周', p2:'9-16周'}[t]}
@@ -160,7 +161,9 @@ const CourseModal: React.FC<{
         <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex gap-3">
           {isEditing && (
             <button 
-              onClick={() => onDelete?.(course.id!)}
+              onClick={() => {
+                if (course.id) onDelete?.(course.id);
+              }}
               className="px-6 py-3 rounded-xl bg-red-50 text-red-500 font-black text-xs hover:bg-red-100 transition-colors"
             >
               DELETE
@@ -221,8 +224,9 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
 
   const exportCSV = () => {
     const header = "id,name,day,row,type,weeks,location\n";
-    // Fix: Handle quotes properly in name
-    const body = courses.map(c => `${c.id},"${c.name.replace(/"/g, '""')}",${c.day},${c.row},${c.type},"${c.weeks.join('|')}", "${(c.location || '').replace(/"/g, '""')}"`).join('\n');
+    const body = courses
+      .map(c => `${c.id},"${c.name.replace(/"/g, '""')}",${c.day},${c.row},${c.type},"${c.weeks.join('|')}","${(c.location || '').replace(/"/g, '""')}"`)
+      .join('\n');
     const blob = new Blob(["\ufeff" + header + body], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -231,43 +235,46 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
   };
 
   const parseCSV = (content: string): Course[] => {
-    const lines = content.split('\n').filter(l => l.trim().length > 0);
-    // Skip header if it looks like one
-    const startIdx = lines[0].startsWith('id,') ? 1 : 0;
-    
-    return lines.slice(startIdx).map((line, idx) => {
-      // Robust regex for CSV parsing handles quotes
-      const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-      if (parts.length < 5) return null; // Invalid line
+    const normalized = content.replace(/^\uFEFF/, '');
+    const lines = normalized.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length === 0) return [];
 
-      // Clean function
-      const clean = (s: string) => s.replace(/^"|"$/g, '').replace(/""/g, '"');
-      
-      // Re-assemble if simple split failed (simple fallback)
-      const simpleParts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
-      
-      const type = simpleParts[4] as CourseType;
-      return {
-        id: simpleParts[0] || Date.now().toString() + idx,
+    const startIdx = lines[0].trim().toLowerCase().startsWith('id,') ? 1 : 0;
+    const parsed: Course[] = [];
+
+    for (let idx = startIdx; idx < lines.length; idx++) {
+      const line = lines[idx];
+      const simpleParts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      if (simpleParts.length < 6) continue;
+
+      const clean = (s: string) => s.trim().replace(/^"|"$/g, '').replace(/""/g, '"');
+      const type = clean(simpleParts[4]) === CourseType.SSR ? CourseType.SSR : CourseType.NORMAL;
+      const rawWeeks = clean(simpleParts[5]);
+
+      const normalizedCourse = normalizeCourse({
+        id: clean(simpleParts[0]) || `${Date.now()}-${idx}`,
         name: clean(simpleParts[1]),
-        day: parseInt(simpleParts[2]),
-        row: parseInt(simpleParts[3]),
+        day: parseInt(clean(simpleParts[2]), 10),
+        row: parseInt(clean(simpleParts[3]), 10),
         type,
-        weeks: clean(simpleParts[5]).split('|').map(w => parseInt(w)).filter(n => !isNaN(n)),
-        color: type === CourseType.SSR ? "bg-rose-100 text-rose-700 border-rose-200" : "bg-blue-100 text-blue-700 border-blue-200",
-        location: simpleParts[6] ? clean(simpleParts[6]) : undefined
-      };
-    }).filter(Boolean) as Course[];
+        weeks: rawWeeks.split('|').map(w => parseInt(w, 10)).filter(n => !isNaN(n)),
+        location: simpleParts[6] ? clean(simpleParts[6]) : undefined,
+      }, `${Date.now()}-${idx}`);
+
+      if (normalizedCourse) parsed.push(normalizedCourse);
+    }
+
+    return parsed;
   };
 
-  const parseExcel = (data: any): Course[] => {
-    const workbook = XLSX.read(data, { type: 'binary' });
+  const parseExcel = (data: string | ArrayBuffer): Course[] => {
+    const workbook = typeof data === 'string'
+      ? XLSX.read(data, { type: 'binary' })
+      : XLSX.read(new Uint8Array(data), { type: 'array' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     // Header: 1 means array of arrays
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as string[][];
-
-    console.log("Parsing Excel Data:", jsonData);
 
     const newCourses: Course[] = [];
     const courseColorMap = new Map<string, string>();
@@ -292,8 +299,8 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
        
        // If we are in a valid slot
        if (currentSlot !== -1 && currentSlot <= 5) {
-           // Columns 1-7 correspond to Mon(0) - Sun(6)
-           for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+            // Columns 1-6 correspond to Mon(0) - Sat(5)
+            for (let dayIdx = 0; dayIdx < DAYS.length; dayIdx++) {
               const cellContent = rowData[dayIdx + 1]; 
               if (!cellContent || typeof cellContent !== 'string' || !cellContent.trim()) continue;
 
@@ -381,7 +388,7 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
        }
     }
 
-    return newCourses;
+    return normalizeCourses(newCourses);
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -401,8 +408,9 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
                newCourses = parseCSV(result);
             }
          } else if (fileExt === 'xlsx' || fileExt === 'xls') {
-             // For Excel, result is binary string
-             newCourses = parseExcel(result);
+             if (typeof result === 'string' || result instanceof ArrayBuffer) {
+               newCourses = parseExcel(result);
+             }
          } else {
              alert("Unsupported file format.");
              return;
@@ -552,11 +560,11 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
                        <span className="text-[9px] font-bold text-slate-400">{course.weeks.length}w</span>
                     </div>
                     <div className="text-xs font-black text-slate-700 truncate">{course.name}</div>
-                    <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400">
-                        <span>{DAYS[course.day].label} #{course.row + 1}</span>
-                    </div>
-                 </div>
-              ))}
+                     <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400">
+                         <span>{DAYS[course.day]?.label ?? 'Unknown'} #{course.row + 1}</span>
+                     </div>
+                  </div>
+               ))}
          </div>
       </div>
 
