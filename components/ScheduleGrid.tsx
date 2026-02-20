@@ -6,6 +6,8 @@ import { DAYS, ROWS } from '../constants';
 import CourseCard from './CourseCard';
 import AnimatedCell from './AnimatedCell';
 
+const EMPTY_CELL_COURSES: Course[] = [];
+
 interface ScheduleGridProps {
   week: number;
   courses: Course[];
@@ -43,9 +45,24 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ week, courses, onSelectCour
     return day === 0 ? -1 : day - 1;
   }, []);
 
-  const getCoursesForCell = (dayIndex: number, rowIndex: number) => {
-    return courses.filter(c => c.day === dayIndex && c.row === rowIndex && c.weeks.includes(week));
-  };
+  const coursesByCell = useMemo(() => {
+    const map = new Map<string, Course[]>();
+
+    courses.forEach((course) => {
+      if (!course.weeks.includes(week)) return;
+
+      const key = `${course.day}-${course.row}`;
+      const existing = map.get(key);
+
+      if (existing) {
+        existing.push(course);
+      } else {
+        map.set(key, [course]);
+      }
+    });
+
+    return map;
+  }, [courses, week]);
 
   const hasSaturdayCourses = useMemo(() => courses.some(c => c.day === 5), [courses]);
   const visibleDays = hasSaturdayCourses ? DAYS : DAYS.slice(0, 5);
@@ -81,7 +98,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ week, courses, onSelectCour
             </div>
 
             {visibleDayIndices.map(dayIndex => {
-              const cellCourses = getCoursesForCell(dayIndex, rowIndex);
+              const cellCourses = coursesByCell.get(`${dayIndex}-${rowIndex}`) ?? EMPTY_CELL_COURSES;
 
               return (
                 <div

@@ -25,10 +25,10 @@ const LINE_COLORS = [
   '#01824a', // Line 4 (Thu)
   '#c70541', // Line 5 (Fri)
   '#6e0346', // Line 6 (Sat)
-  '#9dd32d', // Line 7 (Sun)
 ];
 
-const LINE_NAMES = ['1号线', '2号线', '3号线', '4号线', '5号线', '6号线', '7号线'];
+const LINE_NAMES = ['1号线', '2号线', '3号线', '4号线', '5号线', '6号线'];
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // --- Custom Station Node (Vertical Layout) ---
 const StationNode = ({ data }: { data: { label: string; color?: string } }) => {
@@ -133,7 +133,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ courses }) => {
     });
 
     // Create Edges (Lines)
-    for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+    for (let dayIdx = 0; dayIdx < 6; dayIdx++) {
         const dayCourses = courses.filter(c => c.day === dayIdx);
         if (dayCourses.length === 0) continue;
 
@@ -224,9 +224,9 @@ const MetroMap: React.FC<MetroMapProps> = ({ courses }) => {
                {LINE_NAMES.map((name, i) => (
                  <div key={i} className="flex items-center gap-3">
                    <div className="w-8 h-1.5 rounded-full shadow-sm" style={{ background: LINE_COLORS[i] }}></div>
-                   <span className="text-[10px] font-bold text-slate-600">{name} ({['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]})</span>
-                 </div>
-               ))}
+                   <span className="text-[10px] font-bold text-slate-600">{name} ({DAY_LABELS[i]})</span>
+                  </div>
+                ))}
              </div>
            </div>
         </div>
