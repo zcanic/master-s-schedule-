@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { Course } from './types';
 import { COURSES_DATA } from './constants';
 import ScheduleGrid from './components/ScheduleGrid';
-import ReviewMode from './components/ReviewMode';
-import Visualization3D from './components/Visualization3D';
-import DataEditor from './components/DataEditor';
-import MetroMap from './components/MetroMap';
 import VoidDropModal from './components/VoidDropModal';
 import { useSemesterWeek } from './hooks/useSemesterWeek';
 import { useCoursesStore } from './hooks/useCoursesStore';
 import { useModeSwitch } from './hooks/useModeSwitch';
+
+const loadReviewMode = () => import('./components/ReviewMode');
+const loadVisualization3D = () => import('./components/Visualization3D');
+const loadDataEditor = () => import('./components/DataEditor');
+const loadMetroMap = () => import('./components/MetroMap');
+
+const ReviewMode = lazy(loadReviewMode);
+const Visualization3D = lazy(loadVisualization3D);
+const DataEditor = lazy(loadDataEditor);
+const MetroMap = lazy(loadMetroMap);
 
 const COURSES_STORAGE_KEY = 'zcanic_courses_v7';
 const VOID_KEY_STORAGE = 'zcanic_void_key';
@@ -30,6 +36,19 @@ const App: React.FC = () => {
   const [isVoidDropOpen, setIsVoidDropOpen] = useState(false);
 
   const closeModal = () => setSelectedCourse(null);
+
+  const prefetchVisualizationViews = () => {
+    void loadVisualization3D();
+    void loadMetroMap();
+  };
+
+  const prefetchReviewView = () => {
+    void loadReviewMode();
+  };
+
+  const prefetchEditorView = () => {
+    void loadDataEditor();
+  };
 
   const handleReset = () => {
     if (confirm('⚠️ RESET DATA WARNING\n\nAre you sure you want to reset all data? This will revert your schedule to the hardcoded default (Mock Data) and erase all your edits.\n\nThis action cannot be undone.')) {
@@ -118,12 +137,13 @@ const App: React.FC = () => {
 
             <button
               onClick={() => switchMode('review')}
+              onMouseEnter={prefetchReviewView}
               className={`w-full px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ease-out whitespace-nowrap ${activeMode === 'review' ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
             >
               复盘
             </button>
 
-            <div className="relative group w-full">
+            <div className="relative group w-full" onMouseEnter={prefetchVisualizationViews}>
               <button
                 className={`w-full justify-center px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ease-out flex items-center gap-0.5 whitespace-nowrap ${(activeMode === 'viz3d' || activeMode === 'metro') ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
               >
@@ -141,6 +161,7 @@ const App: React.FC = () => {
           {!isEditor && (
             <button
               onClick={openEditor}
+              onMouseEnter={prefetchEditorView}
               className="hidden md:flex glass-panel px-4 py-2.5 rounded-xl text-[10px] font-black transition-all shadow-sm items-center justify-center gap-2 hover:bg-white w-full md:w-auto order-3 text-slate-400 hover:text-indigo-500"
             >
               <span>EDIT DATA</span>
@@ -154,16 +175,26 @@ const App: React.FC = () => {
           <div key={activeMode} className="flex-1 flex flex-col h-full animate-fade-in-gentle">
             {activeMode === 'schedule' ? (
               <ScheduleGrid week={currentWeek} courses={courses} onSelectCourse={setSelectedCourse} onWeekChange={changeWeek} />
-            ) : activeMode === 'review' ? (
-              <ReviewMode courses={courses} />
-            ) : activeMode === 'viz3d' ? (
-              <Visualization3D courses={courses} />
-            ) : activeMode === 'metro' ? (
-              <MetroMap courses={courses} />
             ) : (
-              <div className="h-full overflow-y-auto hide-scrollbar p-2">
-                <DataEditor courses={courses} onUpdate={updateCourses} onClose={closeEditor} />
-              </div>
+              <Suspense
+                fallback={
+                  <div className="h-full w-full flex items-center justify-center text-xs font-black uppercase tracking-wider text-slate-400">
+                    Loading view...
+                  </div>
+                }
+              >
+                {activeMode === 'review' ? (
+                  <ReviewMode courses={courses} />
+                ) : activeMode === 'viz3d' ? (
+                  <Visualization3D courses={courses} />
+                ) : activeMode === 'metro' ? (
+                  <MetroMap courses={courses} />
+                ) : (
+                  <div className="h-full overflow-y-auto hide-scrollbar p-2">
+                    <DataEditor courses={courses} onUpdate={updateCourses} onClose={closeEditor} />
+                  </div>
+                )}
+              </Suspense>
             )}
           </div>
         </div>
@@ -214,6 +245,7 @@ const App: React.FC = () => {
         <div className="md:hidden flex-shrink-0 my-2 flex justify-center">
           <button
             onClick={openEditor}
+            onMouseEnter={prefetchEditorView}
             className="w-3/4 glass-panel py-3 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 bg-white text-slate-500"
           >
             <span>✏️ EDIT DATA</span>
