@@ -1,4 +1,5 @@
 const XLSX = require('xlsx');
+const path = require('path');
 
 // Color Palette (Morandi) to map
 const COURSE_COLOR_PALETTE = [
@@ -9,7 +10,7 @@ const COURSE_COLOR_PALETTE = [
   '#A89FB1', '#978D9E', '#B5A8BE', '#8E8296', '#AAA0B0', '#958DA5', '#B8A6C0', '#A394B0'
 ];
 
-const filePath = "/Users/zcan/Downloads/master's-schedule---zcanic-pro/exp_xlsx/学生课表 (1).xlsx";
+const filePath = process.argv[2] || path.resolve(process.cwd(), 'samples/xlsx/学生课表 (1).xlsx');
 
 function parseExcel() {
     const workbook = XLSX.readFile(filePath);

@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
-import * as fs from 'fs';
+import * as path from 'path';
 
-const filePath = "/Users/zcan/Downloads/master's-schedule---zcanic-pro/exp_xlsx/学生课表.xlsx";
+const filePath = process.argv[2] || path.resolve(process.cwd(), 'samples/xlsx/学生课表.xlsx');
 const workbook = XLSX.readFile(filePath);
 const sheetName = workbook.SheetNames[0];
 const worksheet = workbook.Sheets[sheetName];

@@ -1,7 +1,7 @@
 const XLSX = require('xlsx');
-const fs = require('fs');
+const path = require('path');
 
-const filePath = "/Users/zcan/Downloads/master's-schedule---zcanic-pro/exp_xlsx/学生课表.xlsx";
+const filePath = process.argv[2] || path.resolve(process.cwd(), 'samples/xlsx/学生课表.xlsx');
 
 try {
   const workbook = XLSX.readFile(filePath);

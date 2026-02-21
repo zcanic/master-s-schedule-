@@ -198,7 +198,7 @@ The Void Drop Protocol has been thoroughly tested across 15+ test scenarios cove
 ## 10. Automated Test Suite
 
 ### Test Suite Location
-`/Users/zcan/Downloads/master's-schedule---zcanic-pro/test-void-drop.html`
+`docs/manual-tests/test-void-drop.html`
 
 ### Tests Included
 1. ✅ API Connectivity
