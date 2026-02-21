@@ -181,7 +181,7 @@ const CourseModal: React.FC<{
   );
 };
 
-const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
+const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate, onClose }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentCourse, setCurrentCourse] = useState<Partial<Course> | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -229,9 +229,11 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
       .join('\n');
     const blob = new Blob(["\ufeff" + header + body], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
+    const downloadUrl = URL.createObjectURL(blob);
+    link.href = downloadUrl;
     link.download = `schedule_backup_${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
+    URL.revokeObjectURL(downloadUrl);
   };
 
   const parseCSV = (content: string): Course[] => {
@@ -267,10 +269,8 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
     return parsed;
   };
 
-  const parseExcel = (data: string | ArrayBuffer): Course[] => {
-    const workbook = typeof data === 'string'
-      ? XLSX.read(data, { type: 'binary' })
-      : XLSX.read(new Uint8Array(data), { type: 'array' });
+  const parseExcel = (data: ArrayBuffer): Course[] => {
+    const workbook = XLSX.read(new Uint8Array(data), { type: 'array' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];
     // Header: 1 means array of arrays
@@ -408,8 +408,8 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
                newCourses = parseCSV(result);
             }
          } else if (fileExt === 'xlsx' || fileExt === 'xls') {
-             if (typeof result === 'string' || result instanceof ArrayBuffer) {
-               newCourses = parseExcel(result);
+             if (result instanceof ArrayBuffer) {
+                newCourses = parseExcel(result);
              }
          } else {
              alert("Unsupported file format.");
@@ -432,7 +432,7 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
     if (fileExt === 'csv') {
         reader.readAsText(file);
     } else {
-        reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
     }
     
     // Reset input
@@ -449,6 +449,9 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate }) => {
             <div className="text-xs font-bold text-slate-400 italic hidden sm:block">Detailed Planner View</div>
          </div>
          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+           <button onClick={onClose} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-500 text-xs font-bold rounded-xl transition-colors text-center border border-slate-200 shadow-sm">
+               Close Editor
+           </button>
            <input 
              type="file" 
              ref={fileInputRef} 

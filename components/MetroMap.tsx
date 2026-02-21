@@ -94,10 +94,23 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => 
     dagreGraph.setEdge(edge.source, edge.target);
   });
 
-  dagre.layout(dagreGraph);
+  try {
+    dagre.layout(dagreGraph);
+  } catch (error) {
+    console.error('Failed to compute metro layout:', error);
+    return { nodes, edges };
+  }
 
   const layoutNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
+    if (!nodeWithPosition) {
+      return {
+        ...node,
+        targetPosition: Position.Top,
+        sourcePosition: Position.Bottom,
+      };
+    }
+
     return {
       ...node,
       position: {
@@ -117,7 +130,7 @@ const MetroMap: React.FC<MetroMapProps> = ({ courses }) => {
   const { initialNodes, initialEdges } = useMemo(() => {
     const nodesMap = new Map<string, Node>();
     const edgesMap = new Map<string, Edge>();
-    const getNodeId = (name: string) => `node-${name}`;
+    const getNodeId = (name: string) => `node-${encodeURIComponent(name.trim().toLowerCase())}`;
 
     // Create Nodes
     courses.forEach(c => {

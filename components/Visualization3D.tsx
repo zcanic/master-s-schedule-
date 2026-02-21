@@ -1,6 +1,6 @@
 
 /// <reference types="@react-three/fiber" />
-import React, { useMemo, useState, Suspense } from 'react';
+import React, { useEffect, useMemo, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Html } from '@react-three/drei';
 import { DAYS, ROWS } from '../constants';
@@ -52,6 +52,14 @@ const Voxel: React.FC<VoxelProps> = ({ position, color, isSSR, opacity, explosio
     return colorMap[bgPart] || '#94a3b8';
   }, [color]);
 
+  const edgeBoxGeometry = useMemo(() => new THREE.BoxGeometry(0.75, 0.75, 0.75), []);
+
+  useEffect(() => {
+    return () => {
+      edgeBoxGeometry.dispose();
+    };
+  }, [edgeBoxGeometry]);
+
   return (
     <mesh position={explodedPos} castShadow receiveShadow>
       <boxGeometry args={[0.75, 0.75, 0.75]} />
@@ -63,7 +71,7 @@ const Voxel: React.FC<VoxelProps> = ({ position, color, isSSR, opacity, explosio
         metalness={0.1}
       />
       <lineSegments>
-        <edgesGeometry args={[new THREE.BoxGeometry(0.75, 0.75, 0.75)]} />
+        <edgesGeometry args={[edgeBoxGeometry]} />
         <lineBasicMaterial color={isSSR ? "#9f1239" : "#475569"} transparent opacity={0.2} />
       </lineSegments>
     </mesh>
@@ -79,7 +87,17 @@ const AxisLabels: React.FC<{ explosion: number; weekRange: [number, number] }> =
   
   // 设定轴原点在包围盒的 "左上角前部"
   const origin = new THREE.Vector3(-4.5, 4.5, 10);
-  const axisLength = 9; // 稍微长一点
+  const axisPositions = useMemo(
+    () => new Float32Array([
+      origin.x, origin.y, origin.z,
+      origin.x + 10, origin.y, origin.z,
+      origin.x, origin.y, origin.z,
+      origin.x, origin.y - 10, origin.z,
+      origin.x, origin.y, origin.z,
+      origin.x, origin.y, origin.z - 20,
+    ]),
+    [origin.x, origin.y, origin.z]
+  );
 
   return (
     <group scale={[explosion, explosion, explosion]}>
@@ -90,17 +108,9 @@ const AxisLabels: React.FC<{ explosion: number; weekRange: [number, number] }> =
          Line 3: Origin -> Back (Z Axis)
       */}
       <line>
-         <bufferGeometry attach="geometry" attributes-position={new THREE.Float32BufferAttribute([
-            // X轴: 向右
-            origin.x, origin.y, origin.z,
-            origin.x + 10, origin.y, origin.z,
-            // Y轴: 向下
-            origin.x, origin.y, origin.z,
-            origin.x, origin.y - 10, origin.z,
-            // Z轴: 向后 (Z值变小)
-            origin.x, origin.y, origin.z,
-            origin.x, origin.y, origin.z - 20
-         ], 3)} />
+         <bufferGeometry>
+           <bufferAttribute attach="attributes-position" args={[axisPositions, 3]} />
+         </bufferGeometry>
          <lineBasicMaterial attach="material" color="#94a3b8" linewidth={2} />
       </line>
 
