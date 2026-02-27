@@ -51,7 +51,7 @@ const App: React.FC = () => {
   const [isVoidDropOpen, setIsVoidDropOpen] = useState(false);
   const [reviewTab, setReviewTab] = useState<ReviewTab>('current');
   const closeHoverTimerRef = useRef<number | null>(null);
-  const menuContainerRef = useRef<HTMLDivElement | null>(null);
+  const menuContainerRef = useRef<HTMLElement | null>(null);
 
   const closeModal = () => setSelectedCourse(null);
 
@@ -129,8 +129,8 @@ const App: React.FC = () => {
 
   return (
     <div className="h-full w-full p-2 sm:p-4 md:p-6 flex flex-col gap-3 overflow-hidden">
-      <header className="flex flex-col lg:flex-row items-center justify-center gap-3 flex-shrink-0 relative">
-        <div className="absolute right-0 top-0 lg:right-4 lg:top-1/2 lg:-translate-y-1/2 z-20" ref={menuContainerRef}>
+      <header className="flex flex-col lg:flex-row items-center justify-center gap-3 flex-shrink-0 relative" ref={menuContainerRef}>
+        <div className="absolute right-0 top-0 lg:right-4 lg:top-1/2 lg:-translate-y-1/2 z-20">
           <div
             className="relative flex justify-end"
             onMouseEnter={() => {
