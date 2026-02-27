@@ -9,6 +9,8 @@ interface UseCoursesStoreOptions {
   voidApiBase?: string;
 }
 
+const CURRENT_STORE_VERSION = 8;
+
 const readStorage = (key: string): string | null => {
   try {
     return localStorage.getItem(key);
@@ -18,12 +20,19 @@ const readStorage = (key: string): string | null => {
   }
 };
 
-const writeStorage = (key: string, value: string): void => {
+const writeStorage = (key: string, value: string): boolean => {
   try {
     localStorage.setItem(key, value);
+    return true;
   } catch (e) {
     console.warn(`Failed to write ${key} to localStorage.`);
+    return false;
   }
+};
+
+const backupStorage = (key: string, value: string, tag: string): void => {
+  const backupKey = `${key}__${tag}_${Date.now()}`;
+  writeStorage(backupKey, value);
 };
 
 const parseStoredCourses = (text: string): Course[] | null => {
@@ -82,7 +91,7 @@ const buildUniqueSemesterName = (baseName: string, semesters: SemesterData[]): s
 const createDefaultStore = (defaultData: Course[]): CoursesStoreSchema => {
   const semester = createSemester('2026年1学期', defaultData);
   return {
-    version: 8,
+    version: CURRENT_STORE_VERSION,
     activeSemesterId: semester.id,
     semesters: [semester],
   };
@@ -143,7 +152,7 @@ const parseStoredStore = (text: string, defaultData: Course[]): CoursesStoreSche
       const legacyCourses = normalizeCourses(parsed);
       const legacy = createSemester('Legacy 导入学期', legacyCourses.length > 0 ? legacyCourses : defaultData);
       return {
-        version: 8,
+        version: CURRENT_STORE_VERSION,
         activeSemesterId: legacy.id,
         semesters: [legacy],
       };
@@ -151,6 +160,12 @@ const parseStoredStore = (text: string, defaultData: Course[]): CoursesStoreSche
 
     if (typeof parsed === 'object' && parsed !== null) {
       const rec = parsed as Record<string, unknown>;
+      const parsedVersion = typeof rec.version === 'number' ? rec.version : null;
+      if (parsedVersion !== null && parsedVersion > CURRENT_STORE_VERSION) {
+        console.warn(`Unsupported store version: ${parsedVersion}`);
+        return null;
+      }
+
       const semesters = normalizeSemesters(rec.semesters);
       if (semesters.length === 0) return null;
 
@@ -158,7 +173,7 @@ const parseStoredStore = (text: string, defaultData: Course[]): CoursesStoreSche
       const hasActive = semesters.some((s) => s.id === activeRaw);
 
       return {
-        version: 8,
+        version: CURRENT_STORE_VERSION,
         activeSemesterId: hasActive ? activeRaw : semesters[0].id,
         semesters,
       };
@@ -213,9 +228,14 @@ export const useCoursesStore = ({
       const savedVoidKey = readStorage(voidKeyStorageKey);
 
       const localStore = saved ? parseStoredStore(saved, defaultData) : null;
+      if (saved && localStore === null) {
+        backupStorage(storageKey, saved, 'parse_failed_backup');
+      }
       const localFallback = localStore ?? createDefaultStore(defaultData);
 
-      if (savedVoidKey && savedVoidKey.length >= 3 && voidApiBase) {
+      const shouldTryCloudBootstrap = !localStore;
+
+      if (shouldTryCloudBootstrap && savedVoidKey && savedVoidKey.length >= 3 && voidApiBase) {
         try {
           const response = await fetch(`${voidApiBase}/${savedVoidKey}`);
           if (response.ok) {
@@ -353,6 +373,7 @@ export const useCoursesStore = ({
   const importFromVoidDropPayload = useCallback((text: string) => {
     const parsedStore = parseStoredStore(text, defaultData);
     if (parsedStore) {
+      backupStorage(storageKey, JSON.stringify(store), 'void_replace_backup');
       setStore(parsedStore);
       return {
         ok: true,
@@ -373,7 +394,7 @@ export const useCoursesStore = ({
       ok: false,
       count: 0,
     };
-  }, [defaultData, updateCourses]);
+  }, [defaultData, storageKey, store, updateCourses]);
 
   const resetCourses = useCallback(() => {
     setStore((prev) => ({

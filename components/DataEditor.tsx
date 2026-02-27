@@ -233,9 +233,24 @@ const DataEditor: React.FC<DataEditorProps> = ({
   };
 
   const exportCSV = () => {
+    const sanitizeForExcel = (value: string): string => {
+      if (!value) return '';
+      return /^[=+\-@\t\r\n]/.test(value) ? `\t${value}` : value;
+    };
+
+    const quoteField = (value: string): string => `"${sanitizeForExcel(value).replace(/"/g, '""')}"`;
+
     const header = `# zcanic_schedule_csv_v2\n# semester:${activeSemesterName}\nid,name,day,row,type,weeks,location\n`;
     const body = courses
-      .map(c => `${c.id},"${c.name.replace(/"/g, '""')}",${c.day},${c.row},${c.type},"${c.weeks.join('|')}","${(c.location || '').replace(/"/g, '""')}"`)
+      .map(c => [
+        quoteField(c.id),
+        quoteField(c.name),
+        String(c.day),
+        String(c.row),
+        quoteField(c.type),
+        quoteField(c.weeks.join('|')),
+        quoteField(c.location || ''),
+      ].join(','))
       .join('\n');
     const blob = new Blob(["\ufeff" + header + body], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -246,40 +261,112 @@ const DataEditor: React.FC<DataEditorProps> = ({
     URL.revokeObjectURL(downloadUrl);
   };
 
+  const parseCSVRows = (text: string): string[][] => {
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let cell = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      const next = text[i + 1];
+
+      if (ch === '"') {
+        if (inQuotes && next === '"') {
+          cell += '"';
+          i += 1;
+          continue;
+        }
+        inQuotes = !inQuotes;
+        continue;
+      }
+
+      if (!inQuotes && ch === ',') {
+        row.push(cell);
+        cell = '';
+        continue;
+      }
+
+      if (!inQuotes && (ch === '\n' || ch === '\r')) {
+        if (ch === '\r' && next === '\n') {
+          i += 1;
+        }
+        row.push(cell);
+        const isNonEmptyRow = row.some((part) => part.trim().length > 0);
+        if (isNonEmptyRow) rows.push(row);
+        row = [];
+        cell = '';
+        continue;
+      }
+
+      cell += ch;
+    }
+
+    row.push(cell);
+    if (row.some((part) => part.trim().length > 0)) {
+      rows.push(row);
+    }
+
+    return rows;
+  };
+
   const parseCSV = (content: string): { courses: Course[]; semesterName?: string } => {
     const normalized = content.replace(/^\uFEFF/, '');
-    const lines = normalized.split(/\r?\n/).filter(l => l.trim().length > 0);
+    const lines = normalized.split(/\r\n|\r|\n/);
     if (lines.length === 0) return { courses: [] };
 
     let semesterName: string | undefined;
     for (const line of lines) {
-      if (line.startsWith('# semester:')) {
-        semesterName = line.slice('# semester:'.length).trim();
+      const trimmed = line.trim();
+      if (trimmed.toLowerCase().startsWith('# semester:')) {
+        semesterName = trimmed.slice('# semester:'.length).trim();
       }
     }
 
-    const dataLines = lines.filter((line) => !line.startsWith('#'));
-    const startIdx = dataLines[0]?.trim().toLowerCase().startsWith('id,') ? 1 : 0;
+    const dataContent = lines
+      .filter((line) => !line.trim().startsWith('#'))
+      .join('\n');
+
+    const rows = parseCSVRows(dataContent);
+    const firstRow = rows[0] ?? [];
+    const normalizedHeaders = firstRow.map((part) => part.trim().toLowerCase());
+    const hasHeader = normalizedHeaders.length >= 6
+      && normalizedHeaders[0] === 'id'
+      && normalizedHeaders[1] === 'name';
+
+    const startIdx = hasHeader ? 1 : 0;
     const parsed: Course[] = [];
 
-    for (let idx = startIdx; idx < dataLines.length; idx++) {
-      const line = dataLines[idx];
-      const simpleParts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-      if (simpleParts.length < 6) continue;
+    const clean = (s: unknown) => String(s ?? '')
+      .trim()
+      .replace(/^"|"$/g, '')
+      .replace(/""/g, '"')
+      .replace(/^\t/, '');
 
-      const clean = (s: string) => s.trim().replace(/^"|"$/g, '').replace(/""/g, '"');
-      const type = clean(simpleParts[4]) === CourseType.SSR ? CourseType.SSR : CourseType.NORMAL;
-      const rawWeeks = clean(simpleParts[5]);
+    for (let idx = startIdx; idx < rows.length; idx++) {
+      const row = rows[idx];
+      if (!row || row.length < 6) continue;
+
+      const parts = row.map(clean);
+
+      const dayRaw = Number.parseInt(parts[2], 10);
+      const rowRaw = Number.parseInt(parts[3], 10);
+      const weeksRaw = parts[5].replace(/[;,]/g, '|');
+
+      const typeRaw = parts[4].toLowerCase();
+      const type = typeRaw === CourseType.SSR ? CourseType.SSR : CourseType.NORMAL;
+
+      const generatedId = `${Date.now()}-${idx}`;
 
       const normalizedCourse = normalizeCourse({
-        id: clean(simpleParts[0]) || `${Date.now()}-${idx}`,
-        name: clean(simpleParts[1]),
-        day: parseInt(clean(simpleParts[2]), 10),
-        row: parseInt(clean(simpleParts[3]), 10),
+        id: parts[0] || generatedId,
+        name: parts[1],
+        day: dayRaw,
+        row: rowRaw,
         type,
-        weeks: rawWeeks.split('|').map(w => parseInt(w, 10)).filter(n => !isNaN(n)),
-        location: simpleParts[6] ? clean(simpleParts[6]) : undefined,
-      }, `${Date.now()}-${idx}`);
+        weeks: weeksRaw.split('|').map(w => Number.parseInt(w, 10)).filter(n => !Number.isNaN(n)),
+        location: parts[6] ? parts[6] : undefined,
+      }, generatedId);
 
       if (normalizedCourse) parsed.push(normalizedCourse);
     }
