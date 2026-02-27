@@ -93,7 +93,7 @@ const App: React.FC = () => {
     closeHoverTimerRef.current = window.setTimeout(() => {
       setOpenHoverMenu('none');
       closeHoverTimerRef.current = null;
-    }, 140);
+    }, 220);
   };
 
   useEffect(() => {
@@ -241,7 +241,7 @@ const App: React.FC = () => {
                 <svg className="hidden sm:block w-2.5 h-2.5 opacity-50 ml-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
               </button>
 
-              <div className={`absolute top-full right-0 mt-0.5 w-28 bg-white rounded-lg shadow-xl border border-slate-100 overflow-hidden transform transition-opacity transition-transform duration-200 origin-top-right z-50 flex flex-col p-1 ${openHoverMenu === 'review' ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible pointer-events-none'}`}>
+              <div className={`absolute top-full right-0 mt-0 w-28 bg-white rounded-lg shadow-xl border border-slate-100 overflow-hidden transform transition-opacity transition-transform duration-200 origin-top-right z-50 flex flex-col p-1 ${openHoverMenu === 'review' ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible pointer-events-none'}`}>
                 <button
                   onClick={() => {
                     setReviewTab('current');
@@ -288,7 +288,7 @@ const App: React.FC = () => {
                 <svg className="hidden sm:block w-2.5 h-2.5 opacity-50 ml-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
               </button>
 
-              <div className={`absolute top-full right-0 mt-0.5 w-24 bg-white rounded-lg shadow-xl border border-slate-100 overflow-hidden transform transition-opacity transition-transform duration-200 origin-top-right z-50 flex flex-col p-1 ${openHoverMenu === 'viz' ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible pointer-events-none'}`}>
+              <div className={`absolute top-full right-0 mt-0 w-24 bg-white rounded-lg shadow-xl border border-slate-100 overflow-hidden transform transition-opacity transition-transform duration-200 origin-top-right z-50 flex flex-col p-1 ${openHoverMenu === 'viz' ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible pointer-events-none'}`}>
                 <button onClick={() => { setOpenHoverMenu('none'); switchMode('viz3d'); }} className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${activeMode === 'viz3d' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-500'}`}>3D View</button>
                 <button onClick={() => { setOpenHoverMenu('none'); switchMode('metro'); }} className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${activeMode === 'metro' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500'}`}>Metro Map</button>
               </div>
