@@ -4,8 +4,11 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const isVercel = process.env.VERCEL === '1' || process.env.VERCEL === 'true';
+    const rawBase = env.VITE_BASE_PATH || (isVercel ? '/' : '/schedule/');
+    const normalizedBase = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
     return {
-      base: '/schedule/',
+      base: normalizedBase,
       server: {
         port: 3000,
         host: '0.0.0.0',
