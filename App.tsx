@@ -51,6 +51,7 @@ const App: React.FC = () => {
   const [isVoidDropOpen, setIsVoidDropOpen] = useState(false);
   const [reviewTab, setReviewTab] = useState<ReviewTab>('current');
   const closeHoverTimerRef = useRef<number | null>(null);
+  const menuContainerRef = useRef<HTMLDivElement | null>(null);
 
   const closeModal = () => setSelectedCourse(null);
 
@@ -103,6 +104,22 @@ const App: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (openHoverMenu === 'none') return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!menuContainerRef.current || !target) return;
+      if (menuContainerRef.current.contains(target)) return;
+      setOpenHoverMenu('none');
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [openHoverMenu]);
+
   const handleReset = () => {
     if (confirm('⚠️ RESET DATA WARNING\n\nAre you sure you want to reset all data? This will revert your schedule to the hardcoded default (Mock Data) and erase all your edits.\n\nThis action cannot be undone.')) {
       resetCourses();
@@ -113,7 +130,7 @@ const App: React.FC = () => {
   return (
     <div className="h-full w-full p-2 sm:p-4 md:p-6 flex flex-col gap-3 overflow-hidden">
       <header className="flex flex-col lg:flex-row items-center justify-center gap-3 flex-shrink-0 relative">
-        <div className="absolute right-0 top-0 lg:right-4 lg:top-1/2 lg:-translate-y-1/2 z-20">
+        <div className="absolute right-0 top-0 lg:right-4 lg:top-1/2 lg:-translate-y-1/2 z-20" ref={menuContainerRef}>
           <div
             className="relative flex justify-end"
             onMouseEnter={() => {
