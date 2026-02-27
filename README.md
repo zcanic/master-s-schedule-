@@ -58,6 +58,20 @@ npm install
 npm run dev
 ```
 
+## PWA 与部署路径说明
+
+- 默认构建路径优先使用 `/schedule/`（适配当前自建服务器部署）。
+- 在 Vercel 环境下会自动切换到根路径 `/`，避免静态资源 `404` 导致白屏。
+- 也可以手动指定构建路径：
+
+```bash
+# 根路径部署
+VITE_BASE_PATH=/ npm run build
+
+# 子路径部署（例如 /schedule/）
+VITE_BASE_PATH=/schedule/ npm run build
+```
+
 ## 质量与构建命令
 
 ```bash
