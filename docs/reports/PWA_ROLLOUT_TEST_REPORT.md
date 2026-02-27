@@ -51,14 +51,25 @@
 
 ## Vercel Verification
 
-- Status: pending before push; to be revalidated after deployment.
-- Required checks:
-  1. Root URL no longer shows white screen.
-  2. `index-*.js` and `index-*.css` return 200 (no 404).
-  3. `manifest.webmanifest` loads from root deployment.
-  4. Service worker registers with root scope.
+- URL tested: `https://master-s-schedule.vercel.app/`
+- Verification timestamp: current deployment after push (`ac82b99..c2c6427`).
+
+| ID | Check | Expected | Result |
+|---|---|---|---|
+| V-01 | Root URL load | No white screen, app renders schedule grid | Pass |
+| V-02 | Static assets | `index-*.js` / `index-*.css` return 200 (no 404) | Pass |
+| V-03 | PWA files | `manifest.webmanifest`, `favicon.svg`, `pwa-192x192.png` load | Pass |
+| V-04 | SW registration | Service worker active with root scope | Pass |
+| V-05 | Functional regression | Schedule/Review/3D/Metro/Data Editor/Void Drop all usable | Pass |
+
+### Runtime notes (non-blocking)
+
+- Browser reported accessibility hints for missing `id/name/label` on some form fields.
+- A transient `THREE.WebGLRenderer: Context Lost.` log appeared during heavy view switching; view recovered and remained functional.
 
 ## Conclusion
 
-- Local PWA rollout and regression checks pass.
-- Final Vercel validation must be executed after pushing this branch to trigger auto-deploy.
+- Local and Vercel production validations both pass.
+- Deployment now supports:
+  - default `/schedule/` base for self-hosted priority
+  - root `/` base in Vercel environments to avoid 404/white-screen failures
