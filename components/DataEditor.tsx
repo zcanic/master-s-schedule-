@@ -197,6 +197,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const normalizeSemesterName = (name: string): string => name.trim().normalize('NFKC').toLowerCase();
 
   /* 1. Sort courses alphabetically (including Chinese Pinyin) */
   const filteredCourses = useMemo(() => {
@@ -261,7 +262,48 @@ const DataEditor: React.FC<DataEditorProps> = ({
     URL.revokeObjectURL(downloadUrl);
   };
 
-  const parseCSVRows = (text: string): string[][] => {
+  const countDelimiterOutsideQuotes = (line: string, delimiter: ',' | ';' | '\t'): number => {
+    let count = 0;
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      const next = line[i + 1];
+      if (ch === '"') {
+        if (inQuotes && next === '"') {
+          i += 1;
+          continue;
+        }
+        inQuotes = !inQuotes;
+        continue;
+      }
+      if (!inQuotes && ch === delimiter) count += 1;
+    }
+    return count;
+  };
+
+  const detectDelimiter = (text: string): ',' | ';' | '\t' => {
+    const candidates: Array<',' | ';' | '\t'> = [',', ';', '\t'];
+    const sampleLines = text
+      .split(/\r\n|\r|\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('#'))
+      .slice(0, 5);
+
+    let best: ',' | ';' | '\t' = ',';
+    let bestScore = -1;
+
+    for (const delimiter of candidates) {
+      const score = sampleLines.reduce((sum, line) => sum + countDelimiterOutsideQuotes(line, delimiter), 0);
+      if (score > bestScore) {
+        best = delimiter;
+        bestScore = score;
+      }
+    }
+
+    return best;
+  };
+
+  const parseCSVRows = (text: string, delimiter: ',' | ';' | '\t' = ','): string[][] => {
     const rows: string[][] = [];
     let row: string[] = [];
     let cell = '';
@@ -281,7 +323,7 @@ const DataEditor: React.FC<DataEditorProps> = ({
         continue;
       }
 
-      if (!inQuotes && ch === ',') {
+      if (!inQuotes && ch === delimiter) {
         row.push(cell);
         cell = '';
         continue;
@@ -327,7 +369,8 @@ const DataEditor: React.FC<DataEditorProps> = ({
       .filter((line) => !line.trim().startsWith('#'))
       .join('\n');
 
-    const rows = parseCSVRows(dataContent);
+    const delimiter = detectDelimiter(dataContent);
+    const rows = parseCSVRows(dataContent, delimiter);
     const firstRow = rows[0] ?? [];
     const normalizedHeaders = firstRow.map((part) => part.trim().toLowerCase());
     const hasHeader = normalizedHeaders.length >= 6
@@ -525,7 +568,9 @@ const DataEditor: React.FC<DataEditorProps> = ({
          }
 
         if (newCourses.length > 0) {
-           const isCrossSemester = importedSemesterName && importedSemesterName !== activeSemesterName;
+           const isCrossSemester = importedSemesterName
+             ? normalizeSemesterName(importedSemesterName) !== normalizeSemesterName(activeSemesterName)
+             : false;
            if (isCrossSemester) {
              const createNew = confirm(
                `检测到导入学期 [${importedSemesterName}]，当前是 [${activeSemesterName}]。\n\n点击“确定”：创建新学期并导入。\n点击“取消”：覆盖当前学期。`,

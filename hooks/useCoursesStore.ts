@@ -88,6 +88,8 @@ const buildUniqueSemesterName = (baseName: string, semesters: SemesterData[]): s
   return `${trimmed} (${n})`;
 };
 
+const normalizeSemesterName = (name: string): string => name.trim().normalize('NFKC').toLowerCase();
+
 const createDefaultStore = (defaultData: Course[]): CoursesStoreSchema => {
   const semester = createSemester('2026年1学期', defaultData);
   return {
@@ -361,7 +363,9 @@ export const useCoursesStore = ({
   }, [activeSemester, createSemesterFromCourses]);
 
   const importFromExternal = useCallback((importedCourses: Course[], importedSemesterName?: string) => {
-    if (importedSemesterName && importedSemesterName !== activeSemester?.name) {
+    const importedName = importedSemesterName ? normalizeSemesterName(importedSemesterName) : '';
+    const activeName = activeSemester?.name ? normalizeSemesterName(activeSemester.name) : '';
+    if (importedName && importedName !== activeName) {
       createSemesterFromCourses(importedSemesterName, importedCourses);
       return;
     }
