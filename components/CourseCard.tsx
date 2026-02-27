@@ -44,7 +44,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, className, cou
       style={isHexColor ? { backgroundColor: color } : undefined}
       className={`
         w-full h-full border-b last:border-b-0
-        transition-all duration-200 cursor-pointer select-none
+        transition-[transform,filter,background-color,color,border-color] duration-200 cursor-pointer select-none
         flex flex-col justify-center items-center text-center
         hover:brightness-95 active:scale-[0.97]
         focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-400

@@ -15,6 +15,28 @@ export interface Course {
   location?: string;
 }
 
+export interface SemesterSnapshot {
+  id: string;
+  createdAt: string;
+  reason: string;
+  courses: Course[];
+}
+
+export interface SemesterData {
+  id: string;
+  name: string;
+  courses: Course[];
+  snapshots: SemesterSnapshot[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CoursesStoreSchema {
+  version: 8;
+  activeSemesterId: string;
+  semesters: SemesterData[];
+}
+
 export type AppMode = 'schedule' | 'review' | 'viz3d' | 'metro' | 'editor';
 
 export interface WeeklyIntensity {

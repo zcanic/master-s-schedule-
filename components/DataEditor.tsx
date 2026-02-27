@@ -6,7 +6,10 @@ import { normalizeCourse, normalizeCourses } from '../courseValidation';
 
 interface DataEditorProps {
   courses: Course[];
+  activeSemesterName: string;
+  allSemesters: { id: string; name: string }[];
   onUpdate: (courses: Course[]) => void;
+  onImportExternal: (courses: Course[], importedSemesterName?: string) => void;
   onClose: () => void;
 }
 
@@ -181,7 +184,14 @@ const CourseModal: React.FC<{
   );
 };
 
-const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate, onClose }) => {
+const DataEditor: React.FC<DataEditorProps> = ({
+  courses,
+  activeSemesterName,
+  allSemesters,
+  onUpdate,
+  onImportExternal,
+  onClose,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentCourse, setCurrentCourse] = useState<Partial<Course> | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -223,7 +233,7 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate, onClose }) =
   };
 
   const exportCSV = () => {
-    const header = "id,name,day,row,type,weeks,location\n";
+    const header = `# zcanic_schedule_csv_v2\n# semester:${activeSemesterName}\nid,name,day,row,type,weeks,location\n`;
     const body = courses
       .map(c => `${c.id},"${c.name.replace(/"/g, '""')}",${c.day},${c.row},${c.type},"${c.weeks.join('|')}","${(c.location || '').replace(/"/g, '""')}"`)
       .join('\n');
@@ -236,16 +246,24 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate, onClose }) =
     URL.revokeObjectURL(downloadUrl);
   };
 
-  const parseCSV = (content: string): Course[] => {
+  const parseCSV = (content: string): { courses: Course[]; semesterName?: string } => {
     const normalized = content.replace(/^\uFEFF/, '');
     const lines = normalized.split(/\r?\n/).filter(l => l.trim().length > 0);
-    if (lines.length === 0) return [];
+    if (lines.length === 0) return { courses: [] };
 
-    const startIdx = lines[0].trim().toLowerCase().startsWith('id,') ? 1 : 0;
+    let semesterName: string | undefined;
+    for (const line of lines) {
+      if (line.startsWith('# semester:')) {
+        semesterName = line.slice('# semester:'.length).trim();
+      }
+    }
+
+    const dataLines = lines.filter((line) => !line.startsWith('#'));
+    const startIdx = dataLines[0]?.trim().toLowerCase().startsWith('id,') ? 1 : 0;
     const parsed: Course[] = [];
 
-    for (let idx = startIdx; idx < lines.length; idx++) {
-      const line = lines[idx];
+    for (let idx = startIdx; idx < dataLines.length; idx++) {
+      const line = dataLines[idx];
       const simpleParts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
       if (simpleParts.length < 6) continue;
 
@@ -266,7 +284,7 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate, onClose }) =
       if (normalizedCourse) parsed.push(normalizedCourse);
     }
 
-    return parsed;
+    return { courses: parsed, semesterName };
   };
 
   const parseExcel = (data: ArrayBuffer): Course[] => {
@@ -402,10 +420,13 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate, onClose }) =
       try {
          const result = event.target?.result;
          let newCourses: Course[] = [];
+         let importedSemesterName: string | undefined;
 
          if (fileExt === 'csv') {
             if (typeof result === 'string') {
-               newCourses = parseCSV(result);
+               const parsed = parseCSV(result);
+               newCourses = parsed.courses;
+               importedSemesterName = parsed.semesterName;
             }
          } else if (fileExt === 'xlsx' || fileExt === 'xls') {
              if (result instanceof ArrayBuffer) {
@@ -417,8 +438,18 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate, onClose }) =
          }
 
         if (newCourses.length > 0) {
-           if (confirm(`Parsed ${newCourses.length} courses. Replace existing schedule?`)) {
-             onUpdate(newCourses);
+           const isCrossSemester = importedSemesterName && importedSemesterName !== activeSemesterName;
+           if (isCrossSemester) {
+             const createNew = confirm(
+               `检测到导入学期 [${importedSemesterName}]，当前是 [${activeSemesterName}]。\n\n点击“确定”：创建新学期并导入。\n点击“取消”：覆盖当前学期。`,
+             );
+             if (createNew) {
+               onImportExternal(newCourses, importedSemesterName);
+             } else {
+               onImportExternal(newCourses, activeSemesterName);
+             }
+           } else if (confirm(`Parsed ${newCourses.length} courses. Replace existing schedule in [${activeSemesterName}]?`)) {
+             onImportExternal(newCourses, activeSemesterName);
            }
         } else {
            alert("Could not find valid courses in this file. Please check format.");
@@ -444,7 +475,10 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate, onClose }) =
       {/* Action Bar */}
       <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between flex-shrink-0">
          <div className="flex items-center gap-4 flex-1 flex-wrap">
-            <h2 className="text-lg font-black text-slate-800">DATA MANAGEMENT</h2>
+            <div className="flex flex-col">
+              <h2 className="text-lg font-black text-slate-800">DATA MANAGEMENT</h2>
+              <span className="text-[10px] font-bold text-slate-400">当前学期：{activeSemesterName} · 共 {allSemesters.length} 学期</span>
+            </div>
             <div className="hidden sm:block h-8 w-[1px] bg-slate-100"></div>
             <div className="text-xs font-bold text-slate-400 italic hidden sm:block">Detailed Planner View</div>
             <div className="w-full md:w-[260px] md:ml-auto">

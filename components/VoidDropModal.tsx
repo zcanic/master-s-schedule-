@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Course } from '../types';
-import { normalizeCourses } from '../courseValidation';
 
 interface VoidDropModalProps {
   isOpen: boolean;
   onClose: () => void;
-  courses: Course[];
-  onCoursesUpdate: (courses: Course[]) => void;
+  onExportStorePayload: () => string;
+  onImportStorePayload: (text: string) => { ok: boolean; count: number };
 }
 
 const VOID_API_BASE = 'https://kvapi.zc13501500964.workers.dev';
 const VOID_KEY_STORAGE = 'zcanic_void_key';
 
-const VoidDropModal: React.FC<VoidDropModalProps> = ({ isOpen, onClose, courses, onCoursesUpdate }) => {
+const VoidDropModal: React.FC<VoidDropModalProps> = ({
+  isOpen,
+  onClose,
+  onExportStorePayload,
+  onImportStorePayload,
+}) => {
   const [voidKey, setVoidKey] = useState('');
   const [status, setStatus] = useState<'idle' | 'uploading' | 'downloading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
@@ -44,7 +47,7 @@ const VoidDropModal: React.FC<VoidDropModalProps> = ({ isOpen, onClose, courses,
     try {
       const response = await fetch(`${VOID_API_BASE}/${voidKey}`, {
         method: 'POST',
-        body: JSON.stringify(courses),
+        body: onExportStorePayload(),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -90,19 +93,13 @@ const VoidDropModal: React.FC<VoidDropModalProps> = ({ isOpen, onClose, courses,
           return;
         }
 
-        const parsed: unknown = JSON.parse(text);
-        if (!Array.isArray(parsed)) {
+        const imported = onImportStorePayload(text);
+        if (!imported.ok) {
           throw new Error('数据格式错误');
         }
 
-        const data = normalizeCourses(parsed);
-        if (parsed.length > 0 && data.length === 0) {
-          throw new Error('数据格式错误');
-        }
-
-        onCoursesUpdate(data);
         setStatus('success');
-        setMessage(`✅ 已从频段 [${voidKey}] 接收 ${data.length} 条数据`);
+        setMessage(`✅ 已从频段 [${voidKey}] 接收 ${imported.count} 条数据`);
         try {
           localStorage.setItem(VOID_KEY_STORAGE, voidKey);
         } catch (e) {
