@@ -20,11 +20,25 @@ const MetroMap = lazy(loadMetroMap);
 const COURSES_STORAGE_KEY = 'zcanic_courses_v7';
 const VOID_KEY_STORAGE = 'zcanic_void_key';
 const VOID_API_BASE = 'https://kvapi.zc13501500964.workers.dev';
+type ReviewTab = 'current' | 'time-machine';
 
 const App: React.FC = () => {
   const { currentWeek, setWeek, changeWeek } = useSemesterWeek('2026-03-02T00:00:00', 16);
   const { activeMode, isEditor, switchMode, openEditor, closeEditor } = useModeSwitch('schedule');
-  const { courses, updateCourses, resetCourses } = useCoursesStore({
+  const {
+    courses,
+    semesters,
+    activeSemester,
+    updateCourses,
+    resetCourses,
+    setActiveSemester,
+    createSemesterFromCourses,
+    restoreSnapshotToActive,
+    restoreSnapshotAsNewSemester,
+    importFromExternal,
+    exportForVoidDrop,
+    importFromVoidDropPayload,
+  } = useCoursesStore({
     storageKey: COURSES_STORAGE_KEY,
     defaultData: COURSES_DATA,
     voidKeyStorageKey: VOID_KEY_STORAGE,
@@ -32,8 +46,9 @@ const App: React.FC = () => {
   });
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [openHoverMenu, setOpenHoverMenu] = useState<'none' | 'about' | 'viz'>('none');
+  const [openHoverMenu, setOpenHoverMenu] = useState<'none' | 'about' | 'review' | 'viz'>('none');
   const [isVoidDropOpen, setIsVoidDropOpen] = useState(false);
+  const [reviewTab, setReviewTab] = useState<ReviewTab>('current');
   const closeHoverTimerRef = useRef<number | null>(null);
 
   const closeModal = () => setSelectedCourse(null);
@@ -51,7 +66,7 @@ const App: React.FC = () => {
     void loadDataEditor();
   };
 
-  const openHoverMenuNow = (menu: 'about' | 'viz') => {
+  const openHoverMenuNow = (menu: 'about' | 'review' | 'viz') => {
     if (closeHoverTimerRef.current !== null) {
       window.clearTimeout(closeHoverTimerRef.current);
       closeHoverTimerRef.current = null;
@@ -162,13 +177,49 @@ const App: React.FC = () => {
               课表
             </button>
 
-            <button
-              onClick={() => switchMode('review')}
-              onMouseEnter={prefetchReviewView}
-              className={`w-full px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ease-out whitespace-nowrap ${activeMode === 'review' ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+            <div
+              className="relative w-full"
+              onMouseEnter={() => {
+                prefetchReviewView();
+                openHoverMenuNow('review');
+              }}
+              onMouseLeave={closeHoverMenuSoon}
             >
-              复盘
-            </button>
+              <button
+                onClick={() => {
+                  setReviewTab('current');
+                  setOpenHoverMenu('none');
+                  switchMode('review');
+                }}
+                className={`w-full justify-center px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ease-out flex items-center gap-0.5 whitespace-nowrap ${activeMode === 'review' ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                <span>复盘</span>
+                <svg className="hidden sm:block w-2.5 h-2.5 opacity-50 ml-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+              </button>
+
+              <div className={`absolute top-full right-0 mt-0.5 w-28 bg-white rounded-lg shadow-xl border border-slate-100 overflow-hidden transform transition-opacity transition-transform duration-200 origin-top-right z-50 flex flex-col p-1 ${openHoverMenu === 'review' ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible pointer-events-none'}`}>
+                <button
+                  onClick={() => {
+                    setReviewTab('current');
+                    setOpenHoverMenu('none');
+                    switchMode('review');
+                  }}
+                  className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${(activeMode === 'review' && reviewTab === 'current') ? 'text-slate-900 bg-slate-100' : 'text-slate-500'}`}
+                >
+                  本学期
+                </button>
+                <button
+                  onClick={() => {
+                    setReviewTab('time-machine');
+                    setOpenHoverMenu('none');
+                    switchMode('review');
+                  }}
+                  className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${(activeMode === 'review' && reviewTab === 'time-machine') ? 'text-slate-900 bg-slate-100' : 'text-slate-500'}`}
+                >
+                  time machine
+                </button>
+              </div>
+            </div>
 
             <div
               className="relative w-full"
@@ -218,14 +269,30 @@ const App: React.FC = () => {
                 }
               >
                 {activeMode === 'review' ? (
-                  <ReviewMode courses={courses} />
+                  <ReviewMode
+                    courses={courses}
+                    selectedTab={reviewTab}
+                    semesters={semesters}
+                    activeSemester={activeSemester}
+                    onSetActiveSemester={setActiveSemester}
+                    onCreateSemester={createSemesterFromCourses}
+                    onRestoreSnapshot={restoreSnapshotToActive}
+                    onRestoreSnapshotAsNewSemester={restoreSnapshotAsNewSemester}
+                  />
                 ) : activeMode === 'viz3d' ? (
                   <Visualization3D courses={courses} />
                 ) : activeMode === 'metro' ? (
                   <MetroMap courses={courses} />
                 ) : (
                   <div className="h-full overflow-y-auto hide-scrollbar p-2">
-                    <DataEditor courses={courses} onUpdate={updateCourses} onClose={closeEditor} />
+                    <DataEditor
+                      courses={courses}
+                      activeSemesterName={activeSemester?.name ?? '当前学期'}
+                      allSemesters={semesters.map((s) => ({ id: s.id, name: s.name }))}
+                      onUpdate={updateCourses}
+                      onImportExternal={importFromExternal}
+                      onClose={closeEditor}
+                    />
                   </div>
                 )}
               </Suspense>
@@ -290,8 +357,8 @@ const App: React.FC = () => {
       <VoidDropModal
         isOpen={isVoidDropOpen}
         onClose={() => setIsVoidDropOpen(false)}
-        courses={courses}
-        onCoursesUpdate={updateCourses}
+        onExportStorePayload={exportForVoidDrop}
+        onImportStorePayload={importFromVoidDropPayload}
       />
     </div>
   );
