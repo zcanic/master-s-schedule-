@@ -41,6 +41,11 @@
 - 引入 `courseValidation.ts` 统一课程数据校验/归一化。
 - 重型视图已做懒加载（lazy + Suspense）以优化首屏体验。
 - `ScheduleGrid` 降低了重复计算路径，减少无意义重渲染。
+- `ReviewMode` 的 Time Machine 已重构为双栏 flex 布局：
+  - 桌面端：左侧学期轨道与右侧版本区为固定区域，内部独立滚动。
+  - 移动端：内容自然纵向展开滚动，不使用固定 grid 锁位。
+- Time Machine 支持学期删除（保留至少一个学期），并保持多学期回溯能力。
+- Data Editor 的导入按钮改为更稳健的文件选择器触发流程（`showPicker` + 回退 `click`）。
 
 ## 技术栈
 
@@ -81,13 +86,15 @@ npm test
 相关文件：
 - `docs/integrations/VOID_KV_API.md`
 - `docs/reports/TEST_REPORT.md`
+- `docs/reports/2026-02-27-data-chain-audit-notes.md`
 - `docs/manual-tests/test-void-drop.html`
 - `scripts/excel/convert_to_mock.cjs`
 - `scripts/excel/debug_loader.cjs`
 - `scripts/excel/inspect_xlsx.cjs`
 - `scripts/excel/inspect_xlsx.ts`
-- `samples/xlsx/学生课表.xlsx`
-- `samples/xlsx/学生课表 (1).xlsx`
+- `scripts/strict-xlsx-import-verify.mjs`
+- `samples/xlsx/学生课表_上学期.xlsx`
+- `samples/xlsx/学生课表_这学期.xlsx`
 - `samples/generated/metadata.json`
 - `samples/generated/mock_data_output.txt`
 
