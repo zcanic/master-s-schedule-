@@ -443,10 +443,19 @@ const DataEditor: React.FC<DataEditorProps> = ({ courses, onUpdate, onClose }) =
     <div className="h-full flex flex-col gap-4">
       {/* Action Bar */}
       <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between flex-shrink-0">
-         <div className="flex items-center gap-4 flex-1">
+         <div className="flex items-center gap-4 flex-1 flex-wrap">
             <h2 className="text-lg font-black text-slate-800">DATA MANAGEMENT</h2>
             <div className="hidden sm:block h-8 w-[1px] bg-slate-100"></div>
             <div className="text-xs font-bold text-slate-400 italic hidden sm:block">Detailed Planner View</div>
+            <div className="w-full md:w-[260px] md:ml-auto">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search courses..."
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+              />
+            </div>
          </div>
          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
            <button onClick={onClose} className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-500 text-xs font-bold rounded-xl transition-colors text-center border border-slate-200 shadow-sm">

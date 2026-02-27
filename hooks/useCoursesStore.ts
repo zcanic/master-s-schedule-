@@ -26,6 +26,20 @@ const writeStorage = (key: string, value: string): void => {
   }
 };
 
+const parseStoredCourses = (text: string): Course[] | null => {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (!Array.isArray(parsed)) return null;
+
+    const normalized = normalizeCourses(parsed);
+    if (parsed.length > 0 && normalized.length === 0) return null;
+
+    return normalized;
+  } catch (e) {
+    return null;
+  }
+};
+
 export const useCoursesStore = ({
   storageKey,
   defaultData,
@@ -48,12 +62,16 @@ export const useCoursesStore = ({
           if (response.ok) {
             const text = await response.text();
             if (text && text !== 'null') {
-              const cloudData = normalizeCourses(JSON.parse(text));
-              if (!cancelled) {
-                setCourses(cloudData);
-                writeStorage(storageKey, JSON.stringify(cloudData));
-                setIsInitialized(true);
-                return;
+              const cloudData = parseStoredCourses(text);
+              if (cloudData !== null) {
+                if (!cancelled) {
+                  setCourses(cloudData);
+                  writeStorage(storageKey, JSON.stringify(cloudData));
+                  setIsInitialized(true);
+                  return;
+                }
+              } else {
+                console.warn('Cloud data format is invalid, fallback to local/default.');
               }
             }
           }
@@ -64,9 +82,10 @@ export const useCoursesStore = ({
 
       if (!cancelled) {
         if (saved) {
-          try {
-            setCourses(normalizeCourses(JSON.parse(saved)));
-          } catch (e) {
+          const localData = parseStoredCourses(saved);
+          if (localData !== null) {
+            setCourses(localData);
+          } else {
             setCourses(defaultData);
           }
         } else {

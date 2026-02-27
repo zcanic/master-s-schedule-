@@ -151,16 +151,25 @@ interface Visualization3DProps {
   courses: Course[];
 }
 
+interface VoxelDatum {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  isSSR: boolean;
+  week: number;
+}
+
 const Visualization3D: React.FC<Visualization3DProps> = ({ courses }) => {
   const [explosion, setExplosion] = useState(1.0);
   const [opacity, setOpacity] = useState(0.9);
   const [weekRange, setWeekRange] = useState<[number, number]>([1, 16]);
 
-  const voxels = useMemo(() => {
-    const data: any[] = [];
+  const voxels = useMemo<VoxelDatum[]>(() => {
+    const data: VoxelDatum[] = [];
     courses.forEach(course => {
       course.weeks.forEach(week => {
         data.push({
+          id: `${course.id}-${course.day}-${course.row}-${week}`,
           position: [(course.day - 2.5) * 1.5, (2.5 - course.row) * 1.5, (8.5 - week) * 1.2],
           color: course.color,
           isSSR: course.type === CourseType.SSR,
@@ -185,8 +194,16 @@ const Visualization3D: React.FC<Visualization3DProps> = ({ courses }) => {
             <hemisphereLight args={['#ffffff', '#f1f5f9', 0.6]} />
 
             <group scale={[explosion, explosion, explosion]}>
-              {voxels.map((v, i) => (
-                <Voxel key={i} {...v} explosion={1} opacity={opacity} visible={v.week >= weekRange[0] && v.week <= weekRange[1]} />
+              {voxels.map((v) => (
+                <Voxel
+                  key={v.id}
+                  position={v.position}
+                  color={v.color}
+                  isSSR={v.isSSR}
+                  explosion={1}
+                  opacity={opacity}
+                  visible={v.week >= weekRange[0] && v.week <= weekRange[1]}
+                />
               ))}
             </group>
             

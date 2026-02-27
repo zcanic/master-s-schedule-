@@ -90,21 +90,25 @@ const VoidDropModal: React.FC<VoidDropModalProps> = ({ isOpen, onClose, courses,
           return;
         }
 
-        const data = normalizeCourses(JSON.parse(text));
-
-        if (Array.isArray(data)) {
-          onCoursesUpdate(data);
-          setStatus('success');
-          setMessage(`✅ 已从频段 [${voidKey}] 接收 ${data.length} 条数据`);
-          try {
-            localStorage.setItem(VOID_KEY_STORAGE, voidKey);
-          } catch (e) {
-            console.warn('Unable to store Void key locally.');
-          }
-          setShowWarning(false);
-        } else {
+        const parsed: unknown = JSON.parse(text);
+        if (!Array.isArray(parsed)) {
           throw new Error('数据格式错误');
         }
+
+        const data = normalizeCourses(parsed);
+        if (parsed.length > 0 && data.length === 0) {
+          throw new Error('数据格式错误');
+        }
+
+        onCoursesUpdate(data);
+        setStatus('success');
+        setMessage(`✅ 已从频段 [${voidKey}] 接收 ${data.length} 条数据`);
+        try {
+          localStorage.setItem(VOID_KEY_STORAGE, voidKey);
+        } catch (e) {
+          console.warn('Unable to store Void key locally.');
+        }
+        setShowWarning(false);
       } else {
         throw new Error('下载失败');
       }
