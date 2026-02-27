@@ -32,6 +32,7 @@ const App: React.FC = () => {
     updateCourses,
     resetCourses,
     setActiveSemester,
+    deleteSemester,
     createSemesterFromCourses,
     restoreSnapshotToActive,
     restoreSnapshotAsNewSemester,
@@ -275,6 +276,7 @@ const App: React.FC = () => {
                     semesters={semesters}
                     activeSemester={activeSemester}
                     onSetActiveSemester={setActiveSemester}
+                    onDeleteSemester={deleteSemester}
                     onCreateSemester={createSemesterFromCourses}
                     onRestoreSnapshot={restoreSnapshotToActive}
                     onRestoreSnapshotAsNewSemester={restoreSnapshotAsNewSemester}

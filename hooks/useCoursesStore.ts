@@ -336,6 +336,25 @@ export const useCoursesStore = ({
     });
   }, []);
 
+  const deleteSemester = useCallback((semesterId: string) => {
+    setStore((prev) => {
+      if (prev.semesters.length <= 1) return prev;
+      if (!prev.semesters.some((s) => s.id === semesterId)) return prev;
+
+      const remaining = prev.semesters.filter((s) => s.id !== semesterId);
+      if (remaining.length === 0) return prev;
+
+      const nextActiveSemesterId =
+        prev.activeSemesterId === semesterId ? remaining[0].id : prev.activeSemesterId;
+
+      return {
+        ...prev,
+        activeSemesterId: nextActiveSemesterId,
+        semesters: remaining,
+      };
+    });
+  }, []);
+
   const restoreSnapshotToActive = useCallback((snapshotId: string) => {
     setStore((prev) => {
       const active = prev.semesters.find((s) => s.id === prev.activeSemesterId);
@@ -419,6 +438,7 @@ export const useCoursesStore = ({
     updateCourses,
     resetCourses,
     setActiveSemester,
+    deleteSemester,
     createSemesterFromCourses,
     restoreSnapshotToActive,
     restoreSnapshotAsNewSemester,

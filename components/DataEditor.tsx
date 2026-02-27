@@ -602,6 +602,23 @@ const DataEditor: React.FC<DataEditorProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const openImportPicker = () => {
+    const input = fileInputRef.current;
+    if (!input) return;
+
+    if (typeof input.showPicker === 'function') {
+      try {
+        input.showPicker();
+        return;
+      } catch (error) {
+        // Fallback to click for browsers blocking showPicker
+      }
+    }
+
+    input.focus();
+    input.click();
+  };
+
   return (
     <div className="h-full flex flex-col gap-4">
       {/* Action Bar */}
@@ -628,15 +645,20 @@ const DataEditor: React.FC<DataEditorProps> = ({
                Close Editor
            </button>
            <input 
+             id="data-editor-import-input"
              type="file" 
              ref={fileInputRef} 
              onChange={handleImport} 
-             className="hidden" 
+             className="sr-only" 
              accept=".csv, .xlsx, .xls" 
            />
            
-           <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-xs font-bold rounded-xl transition-colors text-center border border-emerald-200 shadow-sm">
-               Import Table
+           <button
+             type="button"
+             onClick={openImportPicker}
+             className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-xs font-bold rounded-xl transition-colors text-center border border-emerald-200 shadow-sm"
+           >
+             Import Table
            </button>
            <button onClick={exportCSV} className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-500 text-xs font-bold rounded-xl transition-colors text-center">Export CSV</button>
            <button onClick={openNew} className="col-span-2 sm:col-span-1 px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-xl shadowed transition-all flex items-center justify-center gap-2">
