@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { Course } from './types';
 import { COURSES_DATA } from './constants';
 import ScheduleGrid from './components/ScheduleGrid';
@@ -20,44 +20,11 @@ const MetroMap = lazy(loadMetroMap);
 const COURSES_STORAGE_KEY = 'zcanic_courses_v7';
 const VOID_KEY_STORAGE = 'zcanic_void_key';
 const VOID_API_BASE = 'https://kvapi.zc13501500964.workers.dev';
-type ReviewTab = 'current' | 'time-machine';
-
-const DelayedLoadingFallback: React.FC = () => {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setVisible(true), 120);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  if (!visible) {
-    return <div className="h-full w-full" />;
-  }
-
-  return (
-    <div className="h-full w-full flex items-center justify-center text-xs font-black uppercase tracking-wider text-slate-400">
-      Loading view...
-    </div>
-  );
-};
 
 const App: React.FC = () => {
   const { currentWeek, setWeek, changeWeek } = useSemesterWeek('2026-03-02T00:00:00', 16);
   const { activeMode, isEditor, switchMode, openEditor, closeEditor } = useModeSwitch('schedule');
-  const {
-    courses,
-    semesters,
-    activeSemester,
-    updateCourses,
-    resetCourses,
-    setActiveSemester,
-    createSemesterFromCourses,
-    restoreSnapshotToActive,
-    restoreSnapshotAsNewSemester,
-    importFromExternal,
-    exportForVoidDrop,
-    importFromVoidDropPayload,
-  } = useCoursesStore({
+  const { courses, updateCourses, resetCourses } = useCoursesStore({
     storageKey: COURSES_STORAGE_KEY,
     defaultData: COURSES_DATA,
     voidKeyStorageKey: VOID_KEY_STORAGE,
@@ -65,9 +32,9 @@ const App: React.FC = () => {
   });
 
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [openHoverMenu, setOpenHoverMenu] = useState<'none' | 'about' | 'viz'>('none');
   const [isVoidDropOpen, setIsVoidDropOpen] = useState(false);
-  const [reviewTab, setReviewTab] = useState<ReviewTab>('current');
+  const closeHoverTimerRef = useRef<number | null>(null);
 
   const closeModal = () => setSelectedCourse(null);
 
@@ -84,6 +51,32 @@ const App: React.FC = () => {
     void loadDataEditor();
   };
 
+  const openHoverMenuNow = (menu: 'about' | 'viz') => {
+    if (closeHoverTimerRef.current !== null) {
+      window.clearTimeout(closeHoverTimerRef.current);
+      closeHoverTimerRef.current = null;
+    }
+    setOpenHoverMenu(menu);
+  };
+
+  const closeHoverMenuSoon = () => {
+    if (closeHoverTimerRef.current !== null) {
+      window.clearTimeout(closeHoverTimerRef.current);
+    }
+    closeHoverTimerRef.current = window.setTimeout(() => {
+      setOpenHoverMenu('none');
+      closeHoverTimerRef.current = null;
+    }, 140);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeHoverTimerRef.current !== null) {
+        window.clearTimeout(closeHoverTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleReset = () => {
     if (confirm('⚠️ RESET DATA WARNING\n\nAre you sure you want to reset all data? This will revert your schedule to the hardcoded default (Mock Data) and erase all your edits.\n\nThis action cannot be undone.')) {
       resetCourses();
@@ -95,17 +88,17 @@ const App: React.FC = () => {
     <div className="h-full w-full p-2 sm:p-4 md:p-6 flex flex-col gap-3 overflow-hidden">
       <header className="flex flex-col lg:flex-row items-center justify-center gap-3 flex-shrink-0 relative">
         <div className="absolute right-0 top-0 lg:right-4 lg:top-1/2 lg:-translate-y-1/2 z-20">
-          <div className="relative flex justify-end" onMouseLeave={() => setIsAboutOpen(false)}>
+          <div className="relative flex justify-end" onMouseEnter={() => openHoverMenuNow('about')} onMouseLeave={closeHoverMenuSoon}>
             <div
-              className={`h-9 bg-white shadow-lg border border-slate-100 rounded-full transition-[width,padding,box-shadow] duration-300 ease-out flex items-center overflow-hidden p-0 gap-0 z-[60] ${isAboutOpen ? 'w-auto px-1 shadow-xl' : 'w-9'}`}
-              onMouseEnter={() => setIsAboutOpen(true)}
-              onClick={() => setIsAboutOpen(true)}
+              className={`h-9 bg-white shadow-lg border border-slate-100 rounded-full transition-all duration-500 ease-out flex items-center overflow-hidden p-0 gap-0 z-[60] ${openHoverMenu === 'about' ? 'w-auto px-1 shadow-xl' : 'w-9'}`}
+              onMouseEnter={() => openHoverMenuNow('about')}
+              onClick={() => openHoverMenuNow('about')}
             >
               <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 cursor-help">
                 <span className="font-black text-slate-400 italic font-mono text-xs">i</span>
               </div>
 
-              <div className={`flex items-center gap-2 transition-opacity duration-300 pr-3 ${isAboutOpen ? 'opacity-100 delay-100' : 'opacity-0 pointer-events-none'}`}>
+              <div className={`flex items-center gap-2 transition-opacity duration-300 pr-3 ${openHoverMenu === 'about' ? 'opacity-100 delay-100' : 'opacity-0 pointer-events-none'}`}>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -164,56 +157,37 @@ const App: React.FC = () => {
           <nav className="glass-panel p-1.5 rounded-xl shadow-sm w-full md:w-auto order-1 md:order-2 z-10 grid grid-cols-3 gap-1 mr-12 md:mr-0">
             <button
               onClick={() => switchMode('schedule')}
-              className={`w-full px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-colors transition-transform duration-200 ease-out whitespace-nowrap ${activeMode === 'schedule' ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`w-full px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ease-out whitespace-nowrap ${activeMode === 'schedule' ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
             >
               课表
             </button>
 
-            <div className="relative group w-full" onMouseEnter={prefetchReviewView}>
-              <button
-                onClick={() => {
-                  setReviewTab('current');
-                  switchMode('review');
-                }}
-                className={`w-full justify-center px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-colors transition-transform duration-200 ease-out flex items-center gap-0.5 whitespace-nowrap ${activeMode === 'review' ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                <span>复盘</span>
-                <svg className="hidden sm:block w-2.5 h-2.5 opacity-50 ml-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
-              </button>
+            <button
+              onClick={() => switchMode('review')}
+              onMouseEnter={prefetchReviewView}
+              className={`w-full px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ease-out whitespace-nowrap ${activeMode === 'review' ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              复盘
+            </button>
 
-              <div className="absolute top-full right-0 mt-1 w-28 bg-white rounded-lg shadow-xl border border-slate-100 overflow-hidden transform scale-95 opacity-0 invisible group-hover:scale-100 group-hover:opacity-100 group-hover:visible transition-opacity transition-transform duration-200 origin-top-right z-50 flex flex-col p-1">
-                <button
-                  onClick={() => {
-                    setReviewTab('current');
-                    switchMode('review');
-                  }}
-                  className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${(activeMode === 'review' && reviewTab === 'current') ? 'text-slate-900 bg-slate-100' : 'text-slate-500'}`}
-                >
-                  本学期
-                </button>
-                <button
-                  onClick={() => {
-                    setReviewTab('time-machine');
-                    switchMode('review');
-                  }}
-                  className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${(activeMode === 'review' && reviewTab === 'time-machine') ? 'text-slate-900 bg-slate-100' : 'text-slate-500'}`}
-                >
-                  time machine
-                </button>
-              </div>
-            </div>
-
-            <div className="relative group w-full" onMouseEnter={prefetchVisualizationViews}>
+            <div
+              className="relative w-full"
+              onMouseEnter={() => {
+                prefetchVisualizationViews();
+                openHoverMenuNow('viz');
+              }}
+              onMouseLeave={closeHoverMenuSoon}
+            >
               <button
-                className={`w-full justify-center px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-colors transition-transform duration-200 ease-out flex items-center gap-0.5 whitespace-nowrap ${(activeMode === 'viz3d' || activeMode === 'metro') ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`w-full justify-center px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ease-out flex items-center gap-0.5 whitespace-nowrap ${(activeMode === 'viz3d' || activeMode === 'metro') ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <span>可视化</span>
                 <svg className="hidden sm:block w-2.5 h-2.5 opacity-50 ml-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
               </button>
 
-              <div className="absolute top-full right-0 mt-1 w-24 bg-white rounded-lg shadow-xl border border-slate-100 overflow-hidden transform scale-95 opacity-0 invisible group-hover:scale-100 group-hover:opacity-100 group-hover:visible transition-opacity transition-transform duration-200 origin-top-right z-50 flex flex-col p-1">
-                <button onClick={() => switchMode('viz3d')} className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${activeMode === 'viz3d' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-500'}`}>3D View</button>
-                <button onClick={() => switchMode('metro')} className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${activeMode === 'metro' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500'}`}>Metro Map</button>
+              <div className={`absolute top-full right-0 mt-0.5 w-24 bg-white rounded-lg shadow-xl border border-slate-100 overflow-hidden transform transition-opacity transition-transform duration-200 origin-top-right z-50 flex flex-col p-1 ${openHoverMenu === 'viz' ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible pointer-events-none'}`}>
+                <button onClick={() => { setOpenHoverMenu('none'); switchMode('viz3d'); }} className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${activeMode === 'viz3d' ? 'text-indigo-600 bg-indigo-50' : 'text-slate-500'}`}>3D View</button>
+                <button onClick={() => { setOpenHoverMenu('none'); switchMode('metro'); }} className={`text-left px-3 py-2 rounded-md text-[10px] font-bold hover:bg-slate-50 transition-colors ${activeMode === 'metro' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-500'}`}>Metro Map</button>
               </div>
             </div>
           </nav>
@@ -222,7 +196,7 @@ const App: React.FC = () => {
             <button
               onClick={openEditor}
               onMouseEnter={prefetchEditorView}
-              className="hidden md:flex glass-panel px-4 py-2.5 rounded-xl text-[10px] font-black transition-colors transition-transform duration-200 shadow-sm items-center justify-center gap-2 hover:bg-white w-full md:w-auto order-3 text-slate-400 hover:text-indigo-500"
+              className="hidden md:flex glass-panel px-4 py-2.5 rounded-xl text-[10px] font-black transition-all shadow-sm items-center justify-center gap-2 hover:bg-white w-full md:w-auto order-3 text-slate-400 hover:text-indigo-500"
             >
               <span>EDIT DATA</span>
             </button>
@@ -232,38 +206,26 @@ const App: React.FC = () => {
 
       <main className="flex-1 glass-panel rounded-2xl overflow-hidden border-slate-200 flex flex-col relative">
         <div className="absolute inset-0 p-1 sm:p-2 bg-white/50 backdrop-blur-md overflow-hidden flex flex-col">
-          <div className="flex-1 flex flex-col h-full motion-safe:transition-opacity motion-safe:duration-200">
+          <div key={activeMode} className="flex-1 flex flex-col h-full animate-fade-in-gentle">
             {activeMode === 'schedule' ? (
               <ScheduleGrid week={currentWeek} courses={courses} onSelectCourse={setSelectedCourse} onWeekChange={changeWeek} />
             ) : (
               <Suspense
-                fallback={<DelayedLoadingFallback />}
+                fallback={
+                  <div className="h-full w-full flex items-center justify-center text-xs font-black uppercase tracking-wider text-slate-400">
+                    Loading view...
+                  </div>
+                }
               >
                 {activeMode === 'review' ? (
-                  <ReviewMode
-                    courses={courses}
-                    selectedTab={reviewTab}
-                    semesters={semesters}
-                    activeSemester={activeSemester}
-                    onSetActiveSemester={setActiveSemester}
-                    onCreateSemester={createSemesterFromCourses}
-                    onRestoreSnapshot={restoreSnapshotToActive}
-                    onRestoreSnapshotAsNewSemester={restoreSnapshotAsNewSemester}
-                  />
+                  <ReviewMode courses={courses} />
                 ) : activeMode === 'viz3d' ? (
                   <Visualization3D courses={courses} />
                 ) : activeMode === 'metro' ? (
                   <MetroMap courses={courses} />
                 ) : (
                   <div className="h-full overflow-y-auto hide-scrollbar p-2">
-                    <DataEditor
-                      courses={courses}
-                      activeSemesterName={activeSemester?.name ?? '当前学期'}
-                      allSemesters={semesters.map((s) => ({ id: s.id, name: s.name }))}
-                      onUpdate={updateCourses}
-                      onImportExternal={importFromExternal}
-                      onClose={closeEditor}
-                    />
+                    <DataEditor courses={courses} onUpdate={updateCourses} onClose={closeEditor} />
                   </div>
                 )}
               </Suspense>
@@ -318,7 +280,7 @@ const App: React.FC = () => {
           <button
             onClick={openEditor}
             onMouseEnter={prefetchEditorView}
-            className="w-3/4 glass-panel py-3 rounded-2xl text-xs font-black transition-colors transition-transform duration-200 shadow-md flex items-center justify-center gap-2 active:scale-95 bg-white text-slate-500"
+            className="w-3/4 glass-panel py-3 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 bg-white text-slate-500"
           >
             <span>✏️ EDIT DATA</span>
           </button>
@@ -328,8 +290,8 @@ const App: React.FC = () => {
       <VoidDropModal
         isOpen={isVoidDropOpen}
         onClose={() => setIsVoidDropOpen(false)}
-        onExportStorePayload={exportForVoidDrop}
-        onImportStorePayload={importFromVoidDropPayload}
+        courses={courses}
+        onCoursesUpdate={updateCourses}
       />
     </div>
   );
