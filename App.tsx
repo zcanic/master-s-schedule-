@@ -67,12 +67,22 @@ const App: React.FC = () => {
     void loadDataEditor();
   };
 
+  const canUseHoverMenus = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
   const openHoverMenuNow = (menu: 'about' | 'review' | 'viz') => {
     if (closeHoverTimerRef.current !== null) {
       window.clearTimeout(closeHoverTimerRef.current);
       closeHoverTimerRef.current = null;
     }
     setOpenHoverMenu(menu);
+  };
+
+  const toggleHoverMenu = (menu: 'about' | 'review' | 'viz') => {
+    if (closeHoverTimerRef.current !== null) {
+      window.clearTimeout(closeHoverTimerRef.current);
+      closeHoverTimerRef.current = null;
+    }
+    setOpenHoverMenu((prev) => (prev === menu ? 'none' : menu));
   };
 
   const closeHoverMenuSoon = () => {
@@ -104,10 +114,23 @@ const App: React.FC = () => {
     <div className="h-full w-full p-2 sm:p-4 md:p-6 flex flex-col gap-3 overflow-hidden">
       <header className="flex flex-col lg:flex-row items-center justify-center gap-3 flex-shrink-0 relative">
         <div className="absolute right-0 top-0 lg:right-4 lg:top-1/2 lg:-translate-y-1/2 z-20">
-          <div className="relative flex justify-end" onMouseEnter={() => openHoverMenuNow('about')} onMouseLeave={closeHoverMenuSoon}>
+          <div
+            className="relative flex justify-end"
+            onMouseEnter={() => {
+              if (!canUseHoverMenus()) return;
+              openHoverMenuNow('about');
+            }}
+            onMouseLeave={() => {
+              if (!canUseHoverMenus()) return;
+              closeHoverMenuSoon();
+            }}
+          >
             <div
               className={`h-9 bg-white shadow-lg border border-slate-100 rounded-full transition-all duration-500 ease-out flex items-center overflow-hidden p-0 gap-0 z-[60] ${openHoverMenu === 'about' ? 'w-auto px-1 shadow-xl' : 'w-9'}`}
-              onMouseEnter={() => openHoverMenuNow('about')}
+              onMouseEnter={() => {
+                if (!canUseHoverMenus()) return;
+                openHoverMenuNow('about');
+              }}
               onClick={() => openHoverMenuNow('about')}
             >
               <div className="w-9 h-9 flex items-center justify-center flex-shrink-0 cursor-help">
@@ -181,16 +204,19 @@ const App: React.FC = () => {
             <div
               className="relative w-full"
               onMouseEnter={() => {
+                if (!canUseHoverMenus()) return;
                 prefetchReviewView();
                 openHoverMenuNow('review');
               }}
-              onMouseLeave={closeHoverMenuSoon}
+              onMouseLeave={() => {
+                if (!canUseHoverMenus()) return;
+                closeHoverMenuSoon();
+              }}
             >
               <button
                 onClick={() => {
-                  setReviewTab('current');
-                  setOpenHoverMenu('none');
-                  switchMode('review');
+                  prefetchReviewView();
+                  toggleHoverMenu('review');
                 }}
                 className={`w-full justify-center px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ease-out flex items-center gap-0.5 whitespace-nowrap ${activeMode === 'review' ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
               >
@@ -225,12 +251,20 @@ const App: React.FC = () => {
             <div
               className="relative w-full"
               onMouseEnter={() => {
+                if (!canUseHoverMenus()) return;
                 prefetchVisualizationViews();
                 openHoverMenuNow('viz');
               }}
-              onMouseLeave={closeHoverMenuSoon}
+              onMouseLeave={() => {
+                if (!canUseHoverMenus()) return;
+                closeHoverMenuSoon();
+              }}
             >
               <button
+                onClick={() => {
+                  prefetchVisualizationViews();
+                  toggleHoverMenu('viz');
+                }}
                 className={`w-full justify-center px-1 md:px-6 py-1.5 rounded-lg text-[10px] font-black transition-all duration-300 ease-out flex items-center gap-0.5 whitespace-nowrap ${(activeMode === 'viz3d' || activeMode === 'metro') ? 'bg-slate-900 text-white shadow-md transform scale-105' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <span>可视化</span>
