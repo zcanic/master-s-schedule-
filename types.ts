@@ -37,7 +37,7 @@ export interface CoursesStoreSchema {
   semesters: SemesterData[];
 }
 
-export type AppMode = 'schedule' | 'review' | 'viz3d' | 'metro' | 'editor';
+export type AppMode = 'schedule' | 'review' | 'viz3d' | 'metro' | 'editor' | 'todo';
 
 export interface WeeklyIntensity {
   week: number;
