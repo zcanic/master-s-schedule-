@@ -93,8 +93,8 @@ const CourseModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white w-full max-w-lg rounded-3xl shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_8px_20px_rgba(15,23,42,0.10)] overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h3 className="text-lg font-black text-slate-800">{isEditing ? 'Edit Course' : 'Add Course'}</h3>
