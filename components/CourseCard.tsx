@@ -30,7 +30,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onClick, className, cou
   
   // Dynamic Sizing
   // Slightly increase base readability while preserving density-based adaptive scaling.
-  const textSize = isTiny ? 'text-[9px] sm:text-[11px]' : isCompact ? 'text-[10px] sm:text-[13px]' : 'text-[10px] sm:text-[13px] md:text-[15px] lg:text-[17px]';
+  const textSize = isTiny ? 'text-[10px] sm:text-[12px]' : isCompact ? 'text-[11px] sm:text-[14px]' : 'text-[12px] sm:text-[15px] md:text-[17px] lg:text-[19px]';
   const padding = isTiny ? 'p-0.5 sm:p-1' : isCompact ? 'px-1 py-0.5 sm:p-2' : 'p-1.5 sm:p-3';
 
   const { color } = course;

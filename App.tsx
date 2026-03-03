@@ -11,11 +11,13 @@ const loadReviewMode = () => import('./components/ReviewMode');
 const loadVisualization3D = () => import('./components/Visualization3D');
 const loadDataEditor = () => import('./components/DataEditor');
 const loadMetroMap = () => import('./components/MetroMap');
+const loadTodoPanel = () => import('./components/TodoPanel');
 
 const ReviewMode = lazy(loadReviewMode);
 const Visualization3D = lazy(loadVisualization3D);
 const DataEditor = lazy(loadDataEditor);
 const MetroMap = lazy(loadMetroMap);
+const TodoPanel = lazy(loadTodoPanel);
 
 const COURSES_STORAGE_KEY = 'zcanic_courses_v7';
 const VOID_KEY_STORAGE = 'zcanic_void_key';
@@ -66,6 +68,10 @@ const App: React.FC = () => {
 
   const prefetchEditorView = () => {
     void loadDataEditor();
+  };
+
+  const prefetchTodoView = () => {
+    void loadTodoPanel();
   };
 
   const canUseHoverMenus = () => window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -336,6 +342,10 @@ const App: React.FC = () => {
                   <Visualization3D courses={courses} />
                 ) : activeMode === 'metro' ? (
                   <MetroMap courses={courses} />
+                ) : activeMode === 'todo' ? (
+                  <div className="h-full overflow-y-auto hide-scrollbar p-2">
+                    <TodoPanel />
+                  </div>
                 ) : (
                   <div className="h-full overflow-y-auto hide-scrollbar p-2">
                     <DataEditor
@@ -395,17 +405,31 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {!isEditor && (
-        <div className="md:hidden flex-shrink-0 my-2 flex justify-center">
+      <div className="md:hidden flex-shrink-0 my-2 flex justify-center">
+        <div className="w-3/4 glass-panel p-1 rounded-2xl shadow-md grid grid-cols-2 gap-1">
           <button
             onClick={openEditor}
             onMouseEnter={prefetchEditorView}
-            className="w-3/4 glass-panel py-3 rounded-2xl text-xs font-black transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 bg-white text-slate-500"
+            className={`py-3 rounded-xl text-xs font-black transition-all active:scale-95 ${
+              isEditor ? 'bg-slate-900 text-white' : 'bg-white text-slate-500'
+            }`}
           >
-            <span>✏️ EDIT DATA</span>
+            ✏️ EDIT DATA
+          </button>
+          <button
+            onClick={() => {
+              prefetchTodoView();
+              switchMode('todo');
+            }}
+            onMouseEnter={prefetchTodoView}
+            className={`py-3 rounded-xl text-xs font-black transition-all active:scale-95 ${
+              activeMode === 'todo' ? 'bg-slate-900 text-white' : 'bg-white text-slate-500'
+            }`}
+          >
+            TODO
           </button>
         </div>
-      )}
+      </div>
 
       <VoidDropModal
         isOpen={isVoidDropOpen}
