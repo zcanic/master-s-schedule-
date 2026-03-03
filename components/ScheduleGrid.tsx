@@ -7,6 +7,14 @@ import CourseCard from './CourseCard';
 import AnimatedCell from './AnimatedCell';
 
 const EMPTY_CELL_COURSES: Course[] = [];
+const SLOT_TIMES: Array<{ start: string; end: string }> = [
+  { start: '08:00', end: '09:35' },
+  { start: '09:55', end: '11:35' },
+  { start: '13:30', end: '15:05' },
+  { start: '15:20', end: '16:55' },
+  { start: '17:10', end: '18:45' },
+  { start: '19:30', end: '21:05' },
+];
 
 interface ScheduleGridProps {
   week: number;
@@ -93,8 +101,13 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ week, courses, onSelectCour
         {ROWS.map((rowLabel, rowIndex) => (
           <React.Fragment key={rowIndex}>
             <div className="bg-slate-50/50 p-1 text-center border-none flex flex-col justify-center items-center">
+              <div className="text-[7px] sm:text-[8px] font-bold text-slate-400 leading-none">
+                {SLOT_TIMES[rowIndex]?.start}
+              </div>
               <div className="text-[9px] sm:text-sm font-black text-slate-700">{rowLabel.label}</div>
-              <div className="hidden sm:block text-[7px] text-slate-400 font-bold uppercase tracking-tighter">{rowLabel.sub}</div>
+              <div className="text-[7px] sm:text-[8px] font-bold text-slate-400 leading-none">
+                {SLOT_TIMES[rowIndex]?.end}
+              </div>
             </div>
 
             {visibleDayIndices.map(dayIndex => {
