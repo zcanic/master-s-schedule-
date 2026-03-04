@@ -94,15 +94,16 @@ const CourseModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_8px_20px_rgba(15,23,42,0.10)] overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h3 className="text-lg font-black text-slate-800">{isEditing ? 'Edit Course' : 'Add Course'}</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 flex items-center justify-center font-bold">✕</button>
-        </div>
+      <div className="relative bg-white w-full max-w-lg rounded-3xl shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_8px_20px_rgba(15,23,42,0.10)] overflow-hidden flex flex-col max-h-[88vh]" onClick={e => e.stopPropagation()}>
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 w-7 h-7 rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 flex items-center justify-center font-bold z-10"
+        >
+          ✕
+        </button>
 
         {/* Scrollable Body */}
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="pt-10 px-5 pb-5 overflow-y-auto space-y-5">
           
           {/* Name & Type */}
           <div className="space-y-4">

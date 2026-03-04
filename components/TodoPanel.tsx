@@ -5,11 +5,27 @@ interface TodoItem {
   text: string;
   done: boolean;
   createdAt: string;
+  completedAt?: string;
   dueDate?: string;
 }
 
 const TODO_STORAGE_KEY = 'zcanic_todos_v1';
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_RE = /^(\d{8})\s*第([1-6])节课$/;
+
+const parseDueDate = (value?: string): { dateKey: number; slot: number } | null => {
+  if (!value) return null;
+  const match = value.match(DATE_RE);
+  if (!match) return null;
+  const yyyymmdd = match[1];
+  const slot = Number.parseInt(match[2], 10);
+  const year = Number.parseInt(yyyymmdd.slice(0, 4), 10);
+  const month = Number.parseInt(yyyymmdd.slice(4, 6), 10);
+  const day = Number.parseInt(yyyymmdd.slice(6, 8), 10);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+  const dateKey = Date.UTC(year, month - 1, day);
+  if (!Number.isFinite(dateKey)) return null;
+  return { dateKey, slot };
+};
 
 const readTodos = (): TodoItem[] => {
   try {
@@ -26,9 +42,16 @@ const readTodos = (): TodoItem[] => {
         const todoText = typeof rec.text === 'string' ? rec.text.trim() : '';
         const done = Boolean(rec.done);
         const createdAt = typeof rec.createdAt === 'string' ? rec.createdAt : new Date().toISOString();
-        const dueDate = typeof rec.dueDate === 'string' && rec.dueDate.trim() ? rec.dueDate.trim() : undefined;
+        const completedAt =
+          typeof rec.completedAt === 'string' && rec.completedAt.trim()
+            ? rec.completedAt
+            : done
+              ? createdAt
+              : undefined;
+        const dueRaw = typeof rec.dueDate === 'string' && rec.dueDate.trim() ? rec.dueDate.trim() : undefined;
+        const dueDate = parseDueDate(dueRaw) ? dueRaw : undefined;
         if (!id || !todoText) return null;
-        return { id, text: todoText, done, createdAt, dueDate };
+        return { id, text: todoText, done, createdAt, completedAt, dueDate };
       })
       .filter((v): v is TodoItem => v !== null);
   } catch (e) {
@@ -61,16 +84,26 @@ const TodoPanel: React.FC = () => {
       const bHasDate = Boolean(b.dueDate);
 
       if (aHasDate && bHasDate) {
-        const aTime = new Date(`${a.dueDate as string}T00:00:00`).getTime();
-        const bTime = new Date(`${b.dueDate as string}T00:00:00`).getTime();
-        if (aTime !== bTime) return aTime - bTime;
+        const aDue = parseDueDate(a.dueDate);
+        const bDue = parseDueDate(b.dueDate);
+        if (aDue && bDue) {
+          if (aDue.dateKey !== bDue.dateKey) return aDue.dateKey - bDue.dateKey;
+          if (aDue.slot !== bDue.slot) return aDue.slot - bDue.slot;
+        }
         return byCreatedDesc(a, b);
       }
       if (aHasDate !== bHasDate) return aHasDate ? -1 : 1;
       return byCreatedDesc(a, b);
     });
 
-    return [...pendingSorted, ...done.sort(byCreatedDesc)];
+    const doneSorted = [...done].sort((a, b) => {
+      const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      if (aTime !== bTime) return bTime - aTime;
+      return byCreatedDesc(a, b);
+    });
+
+    return [...pendingSorted, ...doneSorted];
   }, [todos]);
 
   const addTodo = () => {
@@ -84,6 +117,7 @@ const TodoPanel: React.FC = () => {
                 done: false,
                 createdAt: new Date().toISOString(),
                 dueDate: undefined,
+                completedAt: undefined,
               },
               ...prev,
             ]);
@@ -136,7 +170,15 @@ const TodoPanel: React.FC = () => {
                 <button
                   onClick={() =>
                     setTodos((prev) =>
-                      prev.map((todo) => (todo.id === item.id ? { ...todo, done: !todo.done } : todo)),
+                      prev.map((todo) => {
+                        if (todo.id !== item.id) return todo;
+                        const nextDone = !todo.done;
+                        return {
+                          ...todo,
+                          done: nextDone,
+                          completedAt: nextDone ? new Date().toISOString() : undefined,
+                        };
+                      }),
                     )
                   }
                   className={`w-5 h-5 rounded-md border text-[10px] font-black flex items-center justify-center ${
@@ -159,11 +201,11 @@ const TodoPanel: React.FC = () => {
                 {!item.done ? (
                   <button
                     onClick={() => {
-                      const next = window.prompt('设置日期（YYYY-MM-DD），留空清除：', item.dueDate ?? '');
+                      const next = window.prompt('设置日期（YYYYMMDD 第N节课），留空清除：', item.dueDate ?? '');
                       if (next === null) return;
                       const normalized = next.trim();
-                      if (normalized && !DATE_RE.test(normalized)) {
-                        window.alert('日期格式需为 YYYY-MM-DD');
+                      if (normalized && !parseDueDate(normalized)) {
+                        window.alert('日期格式需为：YYYYMMDD 第N节课（N=1~6）');
                         return;
                       }
                       setTodos((prev) =>
